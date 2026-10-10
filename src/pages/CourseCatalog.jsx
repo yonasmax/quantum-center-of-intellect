@@ -24,8 +24,21 @@ export default function CourseCatalog() {
     }).catch(console.error);
   }, []);
 
-  const subjects = ['All', 'Chemistry', 'Biology', 'Physics', 'Math', 'Geez', 'History'];
-  const grades = ['All', '9', '10', '11', '12'];
+  const subjects = [
+    'All',
+    'Mathematics',
+    'Environmental Science',
+    'General Science',
+    'Physics',
+    'Chemistry',
+    'Biology',
+    'English',
+    'Social Studies',
+    'Geography',
+    'History',
+    'Geez',
+  ];
+  const grades = ['All', '5', '6', '7', '8', '9', '10', '11', '12'];
 
   const filtered = lessons.filter(l =>
     (filterSubject === 'All' || l.subject === filterSubject) &&

@@ -3,8 +3,21 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { client } from '../sanityClient';
 import { FiPlus, FiTrash2, FiSave } from 'react-icons/fi';
 
-const SUBJECTS = ['Chemistry', 'Biology', 'Physics', 'Math', 'Geez', 'History'];
-const GRADES = ['9', '10', '11', '12'];
+const SUBJECTS = [
+  'Mathematics',
+  'Environmental Science',
+  'General Science',
+  'Physics',
+  'Chemistry',
+  'Biology',
+  'English',
+  'Social Studies',
+  'Geography',
+  'History',
+  'Geez',
+];
+
+const GRADES = ['5', '6', '7', '8', '9', '10', '11', '12'];
 
 export default function CreateLesson() {
   const navigate = useNavigate();
