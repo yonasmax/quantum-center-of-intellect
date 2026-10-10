@@ -1,4 +1,9 @@
 {
+  "build": {
+    "env": {
+      "VITE_SANITY_PROJECT_ID": "u0mlkw04"
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
