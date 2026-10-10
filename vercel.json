@@ -1,10 +1,4 @@
 {
-  "build": {
-    "env": {
-      "VITE_SANITY_TOKEN": "sk5SeUqVWvBF3yT9Xquuw1T7Vo8PoAybuS9B8kBXwwjQ9e1bS1Ze6Faf3SMo3f1Bhv4pSQI6BvBrJmlPwTAvLTnhqQ0azSoGyZRFxE1XeqSKBW0aGC5Wg0dQlt69t2svOqOqCJRNd94wz99mitKoEe5y57XpKukbauNPYrCH66QFbpLfrJS6",
-      "VITE_SANITY_PROJECT_ID": "u0mlkw04"
-    }
-  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
