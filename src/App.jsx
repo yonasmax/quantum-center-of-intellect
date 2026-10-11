@@ -30,28 +30,49 @@ function Home() {
           <p className="mb-4 text-gray-700">
             Signed in as <strong>{user?.fullName}</strong> ({user?.role})
           </p>
-          <div className="flex gap-3">
-            <Link to="/catalog" className="bg-[#ED8936] hover:bg-orange-500 text-white px-6 py-3 rounded-lg font-bold">
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Link
+              to="/catalog"
+              className="bg-[#ED8936] hover:bg-orange-500 text-white px-6 py-3 rounded-lg font-bold transition-all"
+            >
               Browse Catalog
             </Link>
-            <Link to="/teacher" className="bg-[#1A365D] hover:bg-blue-900 text-white px-6 py-3 rounded-lg font-bold">
-              Teacher Dashboard
-            </Link>
-            <button onClick={logout} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold">
+            {(user?.role === 'teacher' || user?.role === 'admin') && (
+              <Link
+                to="/teacher"
+                className="bg-[#1A365D] hover:bg-blue-900 text-white px-6 py-3 rounded-lg font-bold transition-all"
+              >
+                Teacher Dashboard
+              </Link>
+            )}
+            <button
+              onClick={logout}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold transition-all"
+            >
               Sign Out
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex gap-3">
-          <Link to="/login" className="bg-[#1A365D] hover:bg-blue-900 text-white px-6 py-3 rounded-lg font-bold">
+        <div className="flex flex-wrap gap-3 justify-center">
+          <Link
+            to="/login"
+            className="bg-[#1A365D] hover:bg-blue-900 text-white px-6 py-3 rounded-lg font-bold transition-all"
+          >
             Sign In
           </Link>
-          <Link to="/register" className="bg-[#ED8936] hover:bg-orange-500 text-white px-6 py-3 rounded-lg font-bold">
+          <Link
+            to="/register"
+            className="bg-[#ED8936] hover:bg-orange-500 text-white px-6 py-3 rounded-lg font-bold transition-all"
+          >
             Create Account
           </Link>
         </div>
       )}
+
+      <p className="text-xs text-gray-400 mt-8">
+        © 2026 Quantum Center of Intellect · Free for Ethiopian Students
+      </p>
     </div>
   );
 }
@@ -61,6 +82,7 @@ function AppRoutes() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<Home />} />
+      <Route path="/dashboard" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
