@@ -1,10 +1,9 @@
 // frontend/src/services/api.js
 import axios from 'axios';
 
-// ⭐ Point to the OLD backend (Railway) that has all auth logic
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  'https://quantum-tutorial-backend-production.up.railway.app/api';
+// ⭐ Point to /api (proxied through Vercel → Railway)
+//    This bypasses CORS because browser talks to same-origin /api
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance
 const api = axios.create({
@@ -74,7 +73,7 @@ export const forgotPassword = (email) => api.post('/auth/forgot-password', { ema
 export const resetPassword = (token, password) => api.put(`/auth/reset-password/${token}`, { password });
 
 // ═══════════════════════════════════════════════════════════
-// COURSES ENDPOINTS (for later phases)
+// COURSES ENDPOINTS
 // ═══════════════════════════════════════════════════════════
 export const getCourses = (params) => api.get('/courses', { params });
 export const getCourse = (id) => api.get(`/courses/${id}`);
@@ -83,19 +82,19 @@ export const updateCourse = (id, data) => api.put(`/courses/${id}`, data);
 export const deleteCourse = (id) => api.delete(`/courses/${id}`);
 
 // ═══════════════════════════════════════════════════════════
-// PROGRESS / EXAMS (for later phases)
+// PROGRESS / EXAMS
 // ═══════════════════════════════════════════════════════════
 export const getMyResults = () => api.get('/exams/results/my');
 export const submitExam = (id, data) => api.post(`/exams/${id}/submit`, data);
 export const getAvailableExams = () => api.get('/exams/available');
 
 // ═══════════════════════════════════════════════════════════
-// CERTIFICATES (for later phases)
+// CERTIFICATES
 // ═══════════════════════════════════════════════════════════
 export const verifyCertificate = (code) => api.get(`/certificates/verify/${code}`);
 
 // ═══════════════════════════════════════════════════════════
-// NOTIFICATIONS (for later phases)
+// NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════
 export const getNotifications = (params) => api.get('/notifications', { params });
 export const getUnreadCount = () => api.get('/notifications/unread-count');
