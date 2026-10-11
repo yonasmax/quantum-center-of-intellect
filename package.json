@@ -6,15 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@sanity/client": "^8.9.0",
-    "@sanity/image-url": "^2.1.1",
+    "@sanity/client": "^7.0.0",
+    "@sanity/image-url": "^1.1.0",
+    "axios": "^1.7.9",
     "file-saver": "^2.0.5",
-    "katex": "^0.19.0",
-    "papaparse": "^5.7.0",
+    "katex": "^0.16.11",
+    "papaparse": "^5.4.1",
+    "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.4.0",
@@ -23,16 +24,14 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.6.1",
-    "eslint": "^10.10.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.6",
-    "globals": "^17.12.0",
-    "postcss": "^8.5.29",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.15.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "vite": "^6.0.7"
   }
