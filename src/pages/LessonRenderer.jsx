@@ -102,7 +102,10 @@ export default function LessonRenderer() {
 
     setMarking(true);
     const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
-    const result = await markComplete(lessonId, timeSpent);
+    const result = await markComplete(lessonId, timeSpent, null, {
+  title: lesson.mainTopic || lesson.title || 'Lesson',
+  subject: lesson.subject || 'General',
+});
 
     if (result.success) {
       setCompleted(true);
