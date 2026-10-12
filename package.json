@@ -11,6 +11,7 @@
   "dependencies": {
     "@sanity/client": "^7.0.0",
     "@sanity/image-url": "^1.1.0",
+    "@supabase/supabase-js": "^2.117.3",
     "axios": "^1.7.9",
     "file-saver": "^2.0.5",
     "katex": "^0.16.11",

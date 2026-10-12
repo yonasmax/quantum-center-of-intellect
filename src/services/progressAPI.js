@@ -1,161 +1,174 @@
-// src/services/progressAPI.js
-// Progress tracking API — talks to backend via Vercel proxy (/api)
-// Includes localStorage fallback for when backend is unavailable
-import api from './api';
+﻿// src/services/progressAPI.js
+// Progress tracking — talks to Supabase directly
+import { supabase } from '../supabaseClient';
 
-// ═══════════════════════════════════════════════════════════
-// LOCAL STORAGE FALLBACK
-// Used when backend is down so students don't lose progress
-// ═══════════════════════════════════════════════════════════
-const LOCAL_KEY = 'qci_progress_v1';
-
-function loadLocal() {
-  try {
-    return JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
-  } catch {
-    return {};
+// Get user ID (temporary: from localStorage — will upgrade to real auth later)
+function getUserId() {
+  const stored = localStorage.getItem('user');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      return parsed._id || parsed.id || parsed.email || 'anonymous';
+    } catch {}
   }
-}
-
-function saveLocal(lessonId, data) {
-  const current = loadLocal();
-  current[lessonId] = { ...current[lessonId], ...data, updatedAt: Date.now() };
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(current));
-}
-
-function getAllLocalProgress() {
-  const local = loadLocal();
-  const items = Object.entries(local).map(([lessonId, data]) => ({
-    lesson: { _id: lessonId },
-    ...data,
-  }));
-  const completed = items.filter((p) => p.completed).length;
-  return {
-    success: true,
-    count: items.length,
-    stats: {
-      totalCompleted: completed,
-      totalTimeSeconds: 0,
-      totalTimeHours: 0,
-    },
-    progress: items,
-    _source: 'local', // marker
-  };
+  return localStorage.getItem('token') || 'anonymous';
 }
 
 // ═══════════════════════════════════════════════════════════
-// MARK LESSON AS COMPLETED
+// MARK LESSON COMPLETE
 // ═══════════════════════════════════════════════════════════
-export const markLessonComplete = async (lessonId, timeSpentSeconds = 0, courseId = null) => {
-  // Always save locally first (never lose progress)
-  saveLocal(lessonId, {
-    completed: true,
-    completedAt: new Date().toISOString(),
-    timeSpentSeconds,
-    courseId,
-  });
+export const markLessonComplete = async (lessonId, timeSpentSeconds = 0, courseId = null, lessonMeta = {}) => {
+  const userId = getUserId();
+  if (!userId || userId === 'anonymous') {
+    throw new Error('Not authenticated');
+  }
 
-  // Then try to sync with backend
-  try {
-    const res = await api.post(`/progress/lesson/${lessonId}/complete`, {
-      timeSpentSeconds,
-      courseId,
-    });
-    return res;
-  } catch (err) {
-    // Backend failed — that's OK, local save worked
-    console.warn('[progress] Backend sync failed, saved locally:', err.message);
-    return {
-      data: {
-        success: true,
-        progress: {
-          lesson: lessonId,
-          completed: true,
-          completedAt: new Date().toISOString(),
-          timeSpentSeconds,
-        },
-        _source: 'local',
+  const { data, error } = await supabase
+    .from('progress')
+    .upsert(
+      {
+        user_id: userId,
+        lesson_id: lessonId,
+        lesson_title: lessonMeta.title || null,
+        lesson_subject: lessonMeta.subject || null,
+        completed: true,
+        completed_at: new Date().toISOString(),
+        time_spent_seconds: timeSpentSeconds,
       },
-    };
-  }
+      { onConflict: 'user_id,lesson_id' }
+    )
+    .select()
+    .single();
+
+  if (error) throw error;
+  return { data: { success: true, progress: data } };
 };
 
 // ═══════════════════════════════════════════════════════════
-// MARK LESSON AS ACCESSED (opened but not completed)
+// MARK LESSON ACCESSED
 // ═══════════════════════════════════════════════════════════
 export const markLessonAccessed = async (lessonId, timeSpentSeconds = 0) => {
-  // Save to local first
-  const existing = loadLocal()[lessonId] || {};
-  saveLocal(lessonId, {
-    timeSpentSeconds: (existing.timeSpentSeconds || 0) + timeSpentSeconds,
-    lastAccessedAt: new Date().toISOString(),
-  });
+  const userId = getUserId();
+  if (!userId || userId === 'anonymous') return;
 
-  // Try backend
-  try {
-    await api.post(`/progress/lesson/${lessonId}/access`, {
-      timeSpentSeconds,
-    });
-  } catch (err) {
-    // Silent fail — access tracking is not critical
-    console.warn('[progress] Access sync failed:', err.message);
-  }
+  await supabase
+    .from('progress')
+    .upsert(
+      {
+        user_id: userId,
+        lesson_id: lessonId,
+        completed: false,
+        last_accessed_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,lesson_id', ignoreDuplicates: false }
+    );
 };
 
 // ═══════════════════════════════════════════════════════════
-// FETCH ALL USER PROGRESS
+// GET ALL USER PROGRESS
 // ═══════════════════════════════════════════════════════════
 export const getMyProgress = async () => {
-  try {
-    const res = await api.get('/progress/me');
-    return res;
-  } catch (err) {
-    // Fallback to local storage
-    console.warn('[progress] Backend fetch failed, using local:', err.message);
-    return { data: getAllLocalProgress() };
+  const userId = getUserId();
+  if (!userId || userId === 'anonymous') {
+    return {
+      data: {
+        success: true,
+        count: 0,
+        stats: { totalCompleted: 0, totalTimeSeconds: 0, totalTimeHours: 0 },
+        progress: [],
+      },
+    };
   }
+
+  const { data, error } = await supabase
+    .from('progress')
+    .select('*')
+    .eq('user_id', userId)
+    .order('last_accessed_at', { ascending: false });
+
+  if (error) throw error;
+
+  const formatted = (data || []).map((p) => ({
+    lesson: {
+      _id: p.lesson_id,
+      title: p.lesson_title,
+      subject: p.lesson_subject,
+    },
+    completed: p.completed,
+    completedAt: p.completed_at,
+    lastAccessedAt: p.last_accessed_at,
+    timeSpentSeconds: p.time_spent_seconds,
+  }));
+
+  const totalCompleted = formatted.filter((p) => p.completed).length;
+  const totalTime = formatted.reduce((sum, p) => sum + (p.timeSpentSeconds || 0), 0);
+
+  return {
+    data: {
+      success: true,
+      count: formatted.length,
+      stats: {
+        totalCompleted,
+        totalTimeSeconds: totalTime,
+        totalTimeHours: Math.round((totalTime / 3600) * 10) / 10,
+      },
+      progress: formatted,
+    },
+  };
 };
 
 // ═══════════════════════════════════════════════════════════
-// FETCH PROGRESS FOR A COURSE
+// GET COURSE PROGRESS
 // ═══════════════════════════════════════════════════════════
 export const getCourseProgress = async (courseId) => {
-  try {
-    const res = await api.get(`/progress/course/${courseId}`);
-    return res;
-  } catch (err) {
-    // Fallback: compute from local
-    const local = loadLocal();
-    const courseLessons = Object.entries(local).filter(
-      ([_, data]) => data.courseId === courseId
-    );
-    return {
-      data: {
-        success: true,
-        completedCount: courseLessons.filter(([_, d]) => d.completed).length,
-        lessonCount: 0,
-        percent: 0,
-        _source: 'local',
-      },
-    };
+  const userId = getUserId();
+  if (!userId || userId === 'anonymous') {
+    return { data: { success: true, completedCount: 0, percent: 0 } };
   }
+
+  const { data } = await supabase
+    .from('progress')
+    .select('*')
+    .eq('user_id', userId);
+
+  const completed = (data || []).filter((p) => p.completed).length;
+  return {
+    data: {
+      success: true,
+      completedCount: completed,
+      lessonCount: 0,
+      percent: 0,
+    },
+  };
 };
 
 // ═══════════════════════════════════════════════════════════
-// FETCH PROGRESS FOR A SINGLE LESSON
+// GET SINGLE LESSON PROGRESS
 // ═══════════════════════════════════════════════════════════
 export const getLessonProgress = async (lessonId) => {
-  try {
-    const res = await api.get(`/progress/lesson/${lessonId}`);
-    return res;
-  } catch (err) {
-    const local = loadLocal()[lessonId];
-    return {
-      data: {
-        success: true,
-        progress: local || { completed: false },
-        _source: 'local',
-      },
-    };
+  const userId = getUserId();
+  if (!userId || userId === 'anonymous') {
+    return { data: { success: true, progress: { completed: false } } };
   }
+
+  const { data, error } = await supabase
+    .from('progress')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('lesson_id', lessonId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+
+  return {
+    data: {
+      success: true,
+      progress: data
+        ? {
+            completed: data.completed,
+            timeSpentSeconds: data.time_spent_seconds,
+          }
+        : { completed: false },
+    },
+  };
 };
