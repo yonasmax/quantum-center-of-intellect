@@ -15,11 +15,16 @@ export const ProgressProvider = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
 
   const [progressMap, setProgressMap] = useState({}); // { lessonId: progressObject }
-  const [stats, setStats] = useState({
-    totalCompleted: 0,
-    totalTimeSeconds: 0,
-    totalTimeHours: 0,
-  });
+  // Compute stats from progressMap to guarantee accuracy
+const items = res.data?.progress || [];
+const totalCompleted = items.filter((p) => p.completed).length;
+const totalTime = items.reduce((sum, p) => sum + (p.timeSpentSeconds || 0), 0);
+
+setStats({
+  totalCompleted,
+  totalTimeSeconds: totalTime,
+  totalTimeHours: Math.round((totalTime / 3600) * 10) / 10,
+});
   const [loading, setLoading] = useState(false);
 
   // ═════════════════════════════════════════════════════════
@@ -78,22 +83,16 @@ export const ProgressProvider = ({ children }) => {
       }));
 
       // Update stats
-      setStats((prev) => {
-        const wasCompleted = progressMap[lessonId]?.completed;
-        return {
-          ...prev,
-          totalCompleted: wasCompleted ? prev.totalCompleted : prev.totalCompleted + 1,
-          totalTimeSeconds: prev.totalTimeSeconds + timeSpentSeconds,
-          totalTimeHours: Math.round(((prev.totalTimeSeconds + timeSpentSeconds) / 3600) * 10) / 10,
-        };
-      });
-
-      return { success: true, progress };
-    } catch (err) {
-      console.error('[progress] Mark complete failed:', err);
-      return { success: false, error: err.response?.data?.error || err.message };
-    }
+setStats((prev) => {
+  const wasCompleted = progressMap[lessonId]?.completed;
+  const newTotal = wasCompleted ? prev.totalCompleted : prev.totalCompleted + 1;
+  const newTime = prev.totalTimeSeconds + timeSpentSeconds;
+  return {
+    totalCompleted: newTotal,
+    totalTimeSeconds: newTime,
+    totalTimeHours: Math.round((newTime / 3600) * 10) / 10,
   };
+});
 
   // ═════════════════════════════════════════════════════════
   // MARK A LESSON ACCESSED (not complete, just opened)
