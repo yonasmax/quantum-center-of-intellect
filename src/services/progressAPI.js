@@ -76,20 +76,9 @@ export const markLessonComplete = async (lessonId, timeSpentSeconds = 0, courseI
 // MARK LESSON ACCESSED
 // ═══════════════════════════════════════════════════════════
 export const markLessonAccessed = async (lessonId, timeSpentSeconds = 0) => {
-  const userId = getUserId();
-  if (!userId || userId === 'anonymous') return;
-
-  await supabase
-    .from('progress')
-    .upsert(
-      {
-        user_id: userId,
-        lesson_id: lessonId,
-        completed: false,
-        last_accessed_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id,lesson_id', ignoreDuplicates: false }
-    );
+  // Disabled for now — we only save progress on explicit "Mark as Complete"
+  // This prevents creating rows with completed: false
+  return;
 };
 
 // ═══════════════════════════════════════════════════════════
