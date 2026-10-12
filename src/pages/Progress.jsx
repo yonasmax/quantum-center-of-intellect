@@ -10,21 +10,15 @@ export default function Progress() {
   const { progressMap, stats, loading, loadProgress } = useProgress();
   const { unlocked, allAchievements, checkAndUnlock } = useAchievements();
 
-  // Auto-check achievements on load
   React.useEffect(() => {
     if (stats.totalCompleted > 0) {
       const subjectsStarted = new Set(
         Object.values(progressMap).filter(p => p.completed).map(p => p.lesson?.subject).filter(Boolean)
       ).size;
-      checkAndUnlock({
-        ...stats,
-        subjectsStarted,
-        currentStreak: 1,
-      });
+      checkAndUnlock({ ...stats, subjectsStarted, currentStreak: 1 });
     }
   }, [stats.totalCompleted, progressMap, checkAndUnlock]);
 
-  // Group progress by subject
   const bySubject = useMemo(() => {
     const groups = {};
     Object.values(progressMap).forEach((p) => {
@@ -40,7 +34,33 @@ export default function Progress() {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  const weeklyActivity = [0, 1, 2, 3, 4, 5, 6]; // Last 7 days
+  // Compute real weekly activity based on progress timestamps
+  const weeklyActivity = useMemo(() => {
+    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const today = new Date();
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+
+    Object.values(progressMap).forEach((p) => {
+      if (!p.completedAt && !p.lastAccessedAt) return;
+      const date = new Date(p.completedAt || p.lastAccessedAt);
+      const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays < 7) {
+        const dayIndex = (today.getDay() - diffDays + 7) % 7;
+        const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1; // Monday-first
+        counts[adjustedIndex] += 1;
+      }
+    });
+
+    const max = Math.max(...counts, 1);
+    return days.map((d, i) => ({
+      day: d,
+      count: counts[i],
+      height: counts[i] > 0 ? Math.round((counts[i] / max) * 100) : 0,
+      isToday: i === ((today.getDay() + 6) % 7),
+    }));
+  }, [progressMap]);
+
+  const totalThisWeek = weeklyActivity.reduce((sum, d) => sum + d.count, 0);
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
@@ -79,21 +99,39 @@ export default function Progress() {
 
         {/* Weekly Activity */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
-          <h2 className="font-bold text-[#1A365D] mb-4">📅 This Week</h2>
-          <div className="flex justify-between items-end h-24 gap-2">
-            {weeklyActivity.map((d, i) => {
-              const heights = [30, 60, 45, 80, 20, 55, 90];
-              const colors = i === 6 ? 'bg-[#ED8936]' : 'bg-[#1A365D]/30';
-              return (
-                <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                  <div className={`w-full rounded-t ${colors}`} style={{ height: `${heights[i]}%` }} />
-                  <span className="text-xs text-gray-500">
-                    {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="font-bold text-[#1A365D]">📅 This Week</h2>
+            <span className="text-sm text-gray-500">
+              {totalThisWeek} lesson{totalThisWeek !== 1 ? 's' : ''} this week
+            </span>
+          </div>
+
+          {totalThisWeek === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <p className="text-4xl mb-2">📚</p>
+              <p className="text-gray-600 font-medium">No activity yet this week</p>
+              <p className="text-xs text-gray-500 mt-1">Complete a lesson to see your progress here</p>
+            </div>
+          ) : (
+            <div className="flex justify-between items-end h-32 gap-3">
+              {weeklyActivity.map((d, i) => (
+                <div key={i} className="flex flex-col items-center gap-2 flex-1">
+                  {d.count > 0 && (
+                    <span className="text-xs font-bold text-[#1A365D]">{d.count}</span>
+                  )}
+                  <div
+                    className={`w-full rounded-t transition-all ${
+                      d.isToday ? 'bg-[#ED8936]' : d.count > 0 ? 'bg-[#1A365D]' : 'bg-gray-200'
+                    }`}
+                    style={{ height: `${Math.max(d.height, 5)}%`, minHeight: '4px' }}
+                  />
+                  <span className={`text-xs ${d.isToday ? 'font-bold text-[#ED8936]' : 'text-gray-500'}`}>
+                    {d.day}
                   </span>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Achievements */}
