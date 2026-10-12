@@ -2,16 +2,38 @@
 // Progress tracking — talks to Supabase directly
 import { supabase } from '../supabaseClient';
 
-// Get user ID (temporary: from localStorage — will upgrade to real auth later)
+// ═══════════════════════════════════════════════════════════
+// STABLE USER ID — uses email so it's the same across devices
+// ═══════════════════════════════════════════════════════════
 function getUserId() {
-  const stored = localStorage.getItem('user');
-  if (stored) {
-    try {
+  // First try the user object
+  try {
+    const stored = localStorage.getItem('user');
+    if (stored) {
       const parsed = JSON.parse(stored);
-      return parsed._id || parsed.id || parsed.email || 'anonymous';
-    } catch {}
+      // Prefer email (stable across devices), fall back to _id
+      const id = parsed.email || parsed._id || parsed.id;
+      if (id) {
+        // Normalize: lowercase, remove spaces
+        const normalized = String(id).toLowerCase().trim().replace(/\s+/g, '_');
+        console.log('[progress] Using userId:', normalized);
+        return normalized;
+      }
+    }
+  } catch (e) {
+    console.warn('[progress] Failed to parse user:', e.message);
   }
-  return localStorage.getItem('token') || 'anonymous';
+
+  // Try token
+  const token = localStorage.getItem('token');
+  if (token) {
+    const normalized = String(token).toLowerCase().trim();
+    console.log('[progress] Using token as userId:', normalized.substring(0, 20) + '...');
+    return normalized;
+  }
+
+  console.warn('[progress] No user found — progress not saved');
+  return 'anonymous';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -19,6 +41,8 @@ function getUserId() {
 // ═══════════════════════════════════════════════════════════
 export const markLessonComplete = async (lessonId, timeSpentSeconds = 0, courseId = null, lessonMeta = {}) => {
   const userId = getUserId();
+  console.log('[progress] Saving lesson:', lessonId, 'for user:', userId);
+
   if (!userId || userId === 'anonymous') {
     throw new Error('Not authenticated');
   }
@@ -40,7 +64,11 @@ export const markLessonComplete = async (lessonId, timeSpentSeconds = 0, courseI
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('[progress] Save error:', error);
+    throw error;
+  }
+  console.log('[progress] ✅ Saved:', data);
   return { data: { success: true, progress: data } };
 };
 
@@ -69,6 +97,8 @@ export const markLessonAccessed = async (lessonId, timeSpentSeconds = 0) => {
 // ═══════════════════════════════════════════════════════════
 export const getMyProgress = async () => {
   const userId = getUserId();
+  console.log('[progress] Loading for user:', userId);
+
   if (!userId || userId === 'anonymous') {
     return {
       data: {
@@ -86,7 +116,12 @@ export const getMyProgress = async () => {
     .eq('user_id', userId)
     .order('last_accessed_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    console.error('[progress] Load error:', error);
+    throw error;
+  }
+
+  console.log('[progress] Loaded', data?.length || 0, 'records');
 
   const formatted = (data || []).map((p) => ({
     lesson: {
