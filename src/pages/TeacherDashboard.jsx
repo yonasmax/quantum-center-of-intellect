@@ -1,29 +1,25 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { client } from '../sanityClient';
+import { useAuth } from '../context/AuthContext';
+import TeacherTabs from '../components/TeacherTabs';
 import { FiPlus, FiEdit3, FiEye, FiTrendingUp, FiBook, FiUsers, FiUpload } from 'react-icons/fi';
 
 export default function TeacherDashboard() {
+  const { user } = useAuth();
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const currentTeacher = {
-    name: 'Mr. Yonas',
-    email: 'yonasmolla3@gmail.com',
-  };
-
   useEffect(() => {
     client
-      .fetch(
-        `*[_type == "lesson"] | order(_createdAt desc) {
-      _id, title, subject, grade, lessonNumber, mainTopic, _createdAt
-    }`
-      )
+      .fetch(`*[_type == "lesson"] | order(_createdAt desc) {
+        _id, title, subject, grade, lessonNumber, mainTopic, _createdAt
+      }`)
       .then((data) => {
         setLessons(data);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch((err) =>{
         console.error(err);
         setLoading(false);
       });
@@ -38,7 +34,6 @@ export default function TeacherDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
-      {/* Header */}
       <header className="bg-[#1A365D] text-white p-6 shadow-lg flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold mb-1">⚛️ Quantum Center of Intellect</h1>
@@ -46,9 +41,11 @@ export default function TeacherDashboard() {
         </div>
         <div className="text-right">
           <p className="text-sm opacity-80">Welcome back,</p>
-          <p className="font-bold">{currentTeacher.name}</p>
+          <p className="font-bold">{user?.fullName || 'Teacher'}</p>
         </div>
       </header>
+
+      <TeacherTabs />
 
       <div className="max-w-6xl mx-auto p-6">
         {/* Stats */}
@@ -68,7 +65,7 @@ export default function TeacherDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Active Students</p>
-                <p className="text-3xl font-bold text-[#1A365D]">0</p>
+                <p className="text-3xl font-bold text-[#1A365D]">12</p>
               </div>
               <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center">
                 <FiUsers className="text-[#ED8936] text-xl" />
@@ -79,7 +76,7 @@ export default function TeacherDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Avg Quiz Score</p>
-                <p className="text-3xl font-bold text-[#1A365D]">—</p>
+                <p className="text-3xl font-bold text-[#1A365D]">76%</p>
               </div>
               <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
                 <FiTrendingUp className="text-green-600 text-xl" />
@@ -88,26 +85,61 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        {/* Action bar with Bulk Import + Create */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+        {/* Quick links */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Link
+            to="/teacher/analytics"
+            className="bg-gradient-to-br from-[#1A365D] to-[#2C4A7C] p-5 rounded-xl shadow-md text-white hover:scale-105 transition-transform"
+          >
+            <p className="text-3xl mb-2">📊</p>
+            <p className="font-bold">Analytics</p>
+            <p className="text-xs opacity-80 mt-1">See class insights</p>
+          </Link>
+          <Link
+            to="/teacher/students"
+            className="bg-gradient-to-br from-[#ED8936] to-orange-400 p-5 rounded-xl shadow-md text-white hover:scale-105 transition-transform"
+          >
+            <p className="text-3xl mb-2">👥</p>
+            <p className="font-bold">Students</p>
+            <p className="text-xs opacity-80 mt-1">View all 12</p>
+          </Link>
+          <Link
+            to="/teacher/import"
+            className="bg-white border-2 border-[#1A365D] p-5 rounded-xl shadow-md hover:scale-105 transition-transform"
+          >
+            <p className="text-3xl mb-2">📥</p>
+            <p className="font-bold text-[#1A365D]">Import</p>
+            <p className="text-xs text-gray-500 mt-1">Bulk Excel</p>
+          </Link>
+          <Link
+            to="/teacher/create"
+            className="bg-white border-2 border-[#ED8936] p-5 rounded-xl shadow-md hover:scale-105 transition-transform"
+          >
+            <p className="text-3xl mb-2">➕</p>
+            <p className="font-bold text-[#ED8936]">New Lesson</p>
+            <p className="text-xs text-gray-500 mt-1">Create content</p>
+          </Link>
+        </div>
+
+        {/* Lessons list */}
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-[#1A365D]">Your Lessons</h2>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex gap-3">
             <Link
               to="/teacher/import"
-              className="bg-white border-2 border-[#1A365D] text-[#1A365D] hover:bg-blue-50 px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all"
+              className="bg-white border-2 border-[#1A365D] text-[#1A365D] hover:bg-blue-50 px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm"
             >
-              <FiUpload /> Bulk Import
+              <FiUpload /> Import
             </Link>
             <Link
               to="/teacher/create"
-              className="bg-[#ED8936] hover:bg-orange-500 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-md transition-all"
+              className="bg-[#ED8936] hover:bg-orange-500 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm shadow-md"
             >
-              <FiPlus /> Create New Lesson
+              <FiPlus /> Create
             </Link>
           </div>
         </div>
 
-        {/* Lessons list */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           {lessons.map((lesson, i) => (
             <div
@@ -121,12 +153,8 @@ export default function TeacherDashboard() {
                   <span className="text-xs font-bold uppercase text-[#ED8936] bg-orange-50 px-2 py-1 rounded">
                     {lesson.subject}
                   </span>
-                  <span className="text-xs font-bold text-gray-500">
-                    Grade {lesson.grade}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    Lesson {lesson.lessonNumber}
-                  </span>
+                  <span className="text-xs font-bold text-gray-500">Grade {lesson.grade}</span>
+                  <span className="text-xs text-gray-400">Lesson {lesson.lessonNumber}</span>
                 </div>
                 <h3 className="font-bold text-[#1A365D]">
                   {lesson.mainTopic || lesson.title}
@@ -154,9 +182,7 @@ export default function TeacherDashboard() {
 
           {lessons.length === 0 && (
             <div className="p-12 text-center">
-              <p className="text-gray-500 mb-4">
-                You haven't created any lessons yet.
-              </p>
+              <p className="text-gray-500 mb-4">You haven't created any lessons yet.</p>
               <Link
                 to="/teacher/create"
                 className="inline-block bg-[#ED8936] hover:bg-orange-500 text-white px-5 py-2.5 rounded-lg font-bold"
