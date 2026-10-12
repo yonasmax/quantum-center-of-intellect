@@ -21,6 +21,10 @@ import Progress from './pages/Progress';
 import Certificates from './pages/Certificates';
 import CertificateView from './pages/CertificateView';
 import Leaderboard from './pages/Leaderboard';
+import Pricing from './pages/Pricing';
+import Payments from './pages/Payments';
+import Subscriptions from './pages/Subscriptions';
+import PaymentHistory from './pages/PaymentHistory';
 
 function Home() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -33,21 +37,24 @@ function Home() {
       {isAuthenticated ? (
         <div className="text-center">
           <p className="mb-4 text-gray-700">Signed in as <strong>{user?.fullName}</strong> ({user?.role})</p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Link to="/catalog" className="bg-[#ED8936] hover:bg-orange-500 text-white px-6 py-3 rounded-lg font-bold">Browse Catalog</Link>
-            <Link to="/progress" className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold">📊 My Progress</Link>
-            <Link to="/certificates" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-bold">🎓 Certificates</Link>
-            <Link to="/leaderboard" className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-bold">🏆 Leaderboard</Link>
+          <div className="flex flex-wrap gap-3 justify-center max-w-3xl">
+            <Link to="/catalog" className="bg-[#ED8936] hover:bg-orange-500 text-white px-5 py-3 rounded-lg font-bold">📚 Browse Catalog</Link>
+            <Link to="/progress" className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg font-bold">📊 My Progress</Link>
+            <Link to="/certificates" className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-3 rounded-lg font-bold">🎓 Certificates</Link>
+            <Link to="/leaderboard" className="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-3 rounded-lg font-bold">🏆 Leaderboard</Link>
+            <Link to="/pricing" className="bg-[#1A365D] hover:bg-blue-900 text-white px-5 py-3 rounded-lg font-bold">💎 Plans</Link>
+            <Link to="/subscriptions" className="bg-[#1A365D] hover:bg-blue-900 text-white px-5 py-3 rounded-lg font-bold">💳 My Subscription</Link>
             {(user?.role === 'teacher' || user?.role === 'admin') && (
-              <Link to="/teacher" className="bg-[#1A365D] hover:bg-blue-900 text-white px-6 py-3 rounded-lg font-bold">Teacher Dashboard</Link>
+              <Link to="/teacher" className="bg-blue-700 hover:bg-blue-800 text-white px-5 py-3 rounded-lg font-bold">👨‍🏫 Teacher Dashboard</Link>
             )}
-            <button onClick={logout} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold">Sign Out</button>
+            <button onClick={logout} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-3 rounded-lg font-bold">Sign Out</button>
           </div>
         </div>
       ) : (
         <div className="flex flex-wrap gap-3 justify-center">
           <Link to="/login" className="bg-[#1A365D] hover:bg-blue-900 text-white px-6 py-3 rounded-lg font-bold">Sign In</Link>
           <Link to="/register" className="bg-[#ED8936] hover:bg-orange-500 text-white px-6 py-3 rounded-lg font-bold">Create Account</Link>
+          <Link to="/pricing" className="bg-white border-2 border-[#1A365D] text-[#1A365D] px-6 py-3 rounded-lg font-bold">💰 View Pricing</Link>
         </div>
       )}
 
@@ -72,6 +79,11 @@ function AppRoutes() {
       <Route path="/certificates" element={<Certificates />} />
       <Route path="/certificates/:certificateId" element={<CertificateView />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
+
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/payments" element={<Payments />} />
+      <Route path="/payments/history" element={<PaymentHistory />} />
+      <Route path="/subscriptions" element={<Subscriptions />} />
 
       <Route path="/teacher" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} />
       <Route path="/teacher/analytics" element={<ProtectedRoute><TeacherAnalytics /></ProtectedRoute>} />
