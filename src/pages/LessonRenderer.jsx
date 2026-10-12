@@ -106,6 +106,9 @@ export default function LessonRenderer() {
   title: lesson.mainTopic || lesson.title || 'Lesson',
   subject: lesson.subject || 'General',
 });
+  title: lesson.mainTopic || lesson.title || 'Lesson',
+  subject: lesson.subject || 'General',
+});
 
     if (result.success) {
       setCompleted(true);
