@@ -1,9 +1,9 @@
 // src/context/ProgressContext.jsx
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
-  getMyProgress,
   markLessonComplete as apiMarkComplete,
   markLessonAccessed as apiMarkAccessed,
+  getMyProgress,
 } from '../services/progressAPI';
 import { useAuth } from './AuthContext';
 
@@ -11,128 +11,113 @@ const ProgressContext = createContext();
 
 export const useProgress = () => useContext(ProgressContext);
 
-export const ProgressProvider = ({ children }) => {
-  const { isAuthenticated, user } = useAuth();
+export function ProgressProvider({ children }) {
+  const { user, isAuthenticated } = useAuth();
 
-  const [progressMap, setProgressMap] = useState({}); // { lessonId: progressObject }
-  // Compute stats from progressMap to guarantee accuracy
-const items = res.data?.progress || [];
-const totalCompleted = items.filter((p) => p.completed).length;
-const totalTime = items.reduce((sum, p) => sum + (p.timeSpentSeconds || 0), 0);
+  const [progressMap, setProgressMap] = useState({});
+  const [stats, setStats] = useState({
+    totalCompleted: 0,
+    totalTimeSeconds: 0,
+    totalTimeHours: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-setStats({
-  totalCompleted,
-  totalTimeSeconds: totalTime,
-  totalTimeHours: Math.round((totalTime / 3600) * 10) / 10,
-});
-  const [loading, setLoading] = useState(false);
-
-  // ═════════════════════════════════════════════════════════
-  // LOAD PROGRESS FROM BACKEND
-  // ═════════════════════════════════════════════════════════
-  const loadProgress = useCallback(async () => {
+  // ??? Load progress when user logs in ???
+  useEffect(() => {
     if (!isAuthenticated) {
       setProgressMap({});
       setStats({ totalCompleted: 0, totalTimeSeconds: 0, totalTimeHours: 0 });
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await getMyProgress();
-      const items = res.data?.progress || [];
+    let cancelled = false;
 
-      // Build a map by lessonId for O(1) lookups
-      const map = {};
-      items.forEach((p) => {
-        const lessonId = p.lesson?._id || p.lesson;
-        if (lessonId) map[lessonId] = p;
-      });
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await getMyProgress();
+        if (cancelled) return;
 
-      setProgressMap(map);
-      setStats(res.data?.stats || {
-        totalCompleted: 0,
-        totalTimeSeconds: 0,
-        totalTimeHours: 0,
-      });
-    } catch (err) {
-      // Silent fail — user may not be authenticated or backend may be down
-      if (err.response?.status !== 401) {
-        console.warn('[progress] Load failed:', err.message);
+        const items = res?.data?.progress || [];
+        const map = {};
+        items.forEach((p) => {
+          if (p.lesson?._id) {
+            map[p.lesson._id] = {
+              lesson: p.lesson,
+              completed: p.completed,
+              timeSpentSeconds: p.timeSpentSeconds || 0,
+              completedAt: p.completedAt,
+            };
+          }
+        });
+        setProgressMap(map);
+
+        const totalCompleted = items.filter((p) => p.completed).length;
+        const totalTime = items.reduce((s, p) => s + (p.timeSpentSeconds || 0), 0);
+        setStats({
+          totalCompleted,
+          totalTimeSeconds: totalTime,
+          totalTimeHours: Math.round((totalTime / 3600) * 10) / 10,
+        });
+      } catch (err) {
+        console.error('[progress] Load failed:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
+    })();
+
+    return () => { cancelled = true; };
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    loadProgress();
-  }, [loadProgress]);
-
-  // ═════════════════════════════════════════════════════════
-  // MARK A LESSON COMPLETE
-  // ═════════════════════════════════════════════════════════
+  // ??? Mark a lesson as complete ???
   const markComplete = async (lessonId, timeSpentSeconds = 0, courseId = null, lessonMeta = {}) => {
-  try {
-    const res = await apiMarkComplete(lessonId, timeSpentSeconds, courseId, lessonMeta);
-    const progress = res.data?.progress;
+    try {
+      const res = await apiMarkComplete(lessonId, timeSpentSeconds, courseId, lessonMeta);
+      const progress = res?.data?.progress;
 
-    setProgressMap((prev) => ({
-      ...prev,
-      [lessonId]: {
-        lesson: { _id: lessonId, title: lessonMeta.title, subject: lessonMeta.subject },
-        completed: true,
-        timeSpentSeconds,
-        completedAt: new Date().toISOString(),
-      },
-    }));
+      setProgressMap((prev) => ({
+        ...prev,
+        [lessonId]: {
+          lesson: {
+            _id: lessonId,
+            title: lessonMeta.title || prev[lessonId]?.lesson?.title,
+            subject: lessonMeta.subject || prev[lessonId]?.lesson?.subject,
+          },
+          completed: true,
+          timeSpentSeconds,
+          completedAt: new Date().toISOString(),
+        },
+      }));
 
-    setStats((prev) => {
-      const wasCompleted = progressMap[lessonId]?.completed;
-      const newTotal = wasCompleted ? prev.totalCompleted : prev.totalCompleted + 1;
-      const newTime = prev.totalTimeSeconds + timeSpentSeconds;
-      return {
-        totalCompleted: newTotal,
-        totalTimeSeconds: newTime,
-        totalTimeHours: Math.round((newTime / 3600) * 10) / 10,
-      };
-    });
+      setStats((prev) => {
+        const wasCompleted = progressMap[lessonId]?.completed;
+        const newTotal = wasCompleted ? prev.totalCompleted : prev.totalCompleted + 1;
+        const newTime = prev.totalTimeSeconds + timeSpentSeconds;
+        return {
+          totalCompleted: newTotal,
+          totalTimeSeconds: newTime,
+          totalTimeHours: Math.round((newTime / 3600) * 10) / 10,
+        };
+      });
 
-    return { success: true, progress };
-  } catch (err) {
-    console.error('[progress] Mark complete failed:', err);
-    return { success: false, error: err.response?.data?.error || err.message };
-  }
-};
-
-      // Update stats
-setStats((prev) => {
-  const wasCompleted = progressMap[lessonId]?.completed;
-  const newTotal = wasCompleted ? prev.totalCompleted : prev.totalCompleted + 1;
-  const newTime = prev.totalTimeSeconds + timeSpentSeconds;
-  return {
-    totalCompleted: newTotal,
-    totalTimeSeconds: newTime,
-    totalTimeHours: Math.round((newTime / 3600) * 10) / 10,
+      return { success: true, progress };
+    } catch (err) {
+      console.error('[progress] Mark complete failed:', err);
+      return { success: false, error: err.message };
+    }
   };
-});
 
-  // ═════════════════════════════════════════════════════════
-  // MARK A LESSON ACCESSED (not complete, just opened)
-  // ═════════════════════════════════════════════════════════
+  // ??? Mark a lesson as accessed (currently disabled) ???
   const markAccessed = async (lessonId, timeSpentSeconds = 0) => {
-    if (!isAuthenticated) return;
     try {
       await apiMarkAccessed(lessonId, timeSpentSeconds);
     } catch (err) {
-      // Silent fail — not critical
       console.warn('[progress] Mark accessed failed:', err.message);
     }
   };
 
-  // ═════════════════════════════════════════════════════════
-  // HELPERS
-  // ═════════════════════════════════════════════════════════
+  // ??? Helpers ???
   const isLessonCompleted = (lessonId) => !!progressMap[lessonId]?.completed;
 
   const getLessonTime = (lessonId) => progressMap[lessonId]?.timeSpentSeconds || 0;
@@ -141,7 +126,6 @@ setStats((prev) => {
     progressMap,
     stats,
     loading,
-    loadProgress,
     markComplete,
     markAccessed,
     isLessonCompleted,
@@ -149,4 +133,4 @@ setStats((prev) => {
   };
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;
-};
+}
