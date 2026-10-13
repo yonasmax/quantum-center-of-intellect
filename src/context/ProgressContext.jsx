@@ -72,15 +72,38 @@ setStats({
   // ═════════════════════════════════════════════════════════
   // MARK A LESSON COMPLETE
   // ═════════════════════════════════════════════════════════
-  const markComplete = async (lessonId, timeSpentSeconds = 0, courseId = null) => {
-    try {
-      const res = await apiMarkComplete(lessonId, timeSpentSeconds, courseId);
-      const progress = res.data?.progress;
+  const markComplete = async (lessonId, timeSpentSeconds = 0, courseId = null, lessonMeta = {}) => {
+  try {
+    const res = await apiMarkComplete(lessonId, timeSpentSeconds, courseId, lessonMeta);
+    const progress = res.data?.progress;
 
-      setProgressMap((prev) => ({
-        ...prev,
-        [lessonId]: progress,
-      }));
+    setProgressMap((prev) => ({
+      ...prev,
+      [lessonId]: {
+        lesson: { _id: lessonId, title: lessonMeta.title, subject: lessonMeta.subject },
+        completed: true,
+        timeSpentSeconds,
+        completedAt: new Date().toISOString(),
+      },
+    }));
+
+    setStats((prev) => {
+      const wasCompleted = progressMap[lessonId]?.completed;
+      const newTotal = wasCompleted ? prev.totalCompleted : prev.totalCompleted + 1;
+      const newTime = prev.totalTimeSeconds + timeSpentSeconds;
+      return {
+        totalCompleted: newTotal,
+        totalTimeSeconds: newTime,
+        totalTimeHours: Math.round((newTime / 3600) * 10) / 10,
+      };
+    });
+
+    return { success: true, progress };
+  } catch (err) {
+    console.error('[progress] Mark complete failed:', err);
+    return { success: false, error: err.response?.data?.error || err.message };
+  }
+};
 
       // Update stats
 setStats((prev) => {

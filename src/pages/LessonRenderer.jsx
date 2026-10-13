@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { client, urlFor } from '../sanityClient';
 import { useAuth } from '../context/AuthContext';
@@ -148,7 +148,7 @@ export default function LessonRenderer() {
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-[#1A365D] rounded-lg flex items-center justify-center">
-              <span className="text-white text-lg">⚛️</span>
+              <span className="text-white text-lg">QC</span>
             </div>
             <div>
               <h1 className="font-bold text-[#1A365D] leading-tight">Quantum Center of Intellect</h1>
@@ -177,7 +177,7 @@ export default function LessonRenderer() {
           <div className="px-6 py-2 bg-[#F5F7FA] border-t border-gray-200">
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-gray-600 font-medium">
-                {completed ? '✅ Completed' : '📖 In Progress'}
+                {completed ? '[OK] Completed' : '[Book] In Progress'}
               </span>
               <span className="text-gray-500">
                 Time: {Math.round(getLessonTime(lessonId) / 60)} min
@@ -210,16 +210,16 @@ export default function LessonRenderer() {
                 <h2 className="font-bold text-lg text-[#1A365D] mb-3">{lesson.mainTopic || lesson.title}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   <div className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">✅</span>
+                    <span className="text-green-500 mt-0.5">[OK]</span>
                     <div>
                       <p className="font-bold text-gray-700">Objectives:</p>
                       <ul className="text-gray-600 text-xs mt-1 space-y-0.5">
-                        {lesson.objectives?.map((obj, i) => <li key={i}>• {obj}</li>)}
+                        {lesson.objectives?.map((obj, i) => <li key={i}>? {obj}</li>)}
                       </ul>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="text-[#ED8936] mt-0.5">🎯</span>
+                    <span className="text-[#ED8936] mt-0.5">[Goal]</span>
                     <div>
                       <p className="font-bold text-gray-700">Learning Competence:</p>
                       <p className="text-gray-600 text-xs mt-1">{lesson.competence}</p>
@@ -292,7 +292,7 @@ export default function LessonRenderer() {
                           )}
                           {submitted && (
                             <p className={`mt-3 text-xs font-bold p-2 rounded ${isCorrect ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                              {isCorrect ? '✅ Correct!' : `❌ Incorrect. Correct answer: ${q.correctAnswer}`}
+                              {isCorrect ? '[OK] Correct!' : `[X] Incorrect. Correct answer: ${q.correctAnswer}`}
                             </p>
                           )}
                         </div>
@@ -307,7 +307,7 @@ export default function LessonRenderer() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-bold text-[#1A365D]">
-                        {completed ? '✅ Lesson Completed' : '📖 Finished reading?'}
+                        {completed ? '[OK] Lesson Completed' : '[Book] Finished reading?'}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         {completed ? 'Great work! Your progress is saved.' : 'Mark this lesson as complete to track your progress.'}
@@ -320,7 +320,7 @@ export default function LessonRenderer() {
                         completed ? 'bg-green-100 text-green-800 cursor-default' : 'bg-[#ED8936] hover:bg-orange-500 text-white'
                       } disabled:opacity-50`}
                     >
-                      {marking ? 'Saving...' : completed ? '✅ Completed' : 'Mark as Complete'}
+                      {marking ? 'Saving...' : completed ? '[OK] Completed' : 'Mark as Complete'}
                     </button>
                   </div>
                 </div>
@@ -346,11 +346,11 @@ export default function LessonRenderer() {
 
               {lesson.takeaways && lesson.takeaways.length > 0 && (
                 <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 shadow-sm">
-                  <h3 className="font-bold text-[#ED8936] text-sm mb-3 flex items-center gap-2">💡 Key Takeaways</h3>
+                  <h3 className="font-bold text-[#ED8936] text-sm mb-3 flex items-center gap-2">[Tip] Key Takeaways</h3>
                   <ul className="space-y-2 text-xs text-gray-700">
                     {lesson.takeaways.map((t, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <span className="text-[#ED8936] mt-0.5">▸</span>
+                        <span className="text-[#ED8936] mt-0.5">></span>
                         <span>{t}</span>
                       </li>
                     ))}
@@ -372,7 +372,7 @@ export default function LessonRenderer() {
                   </div>
                   {quizSubmitted && (
                     <p className={`text-xs font-bold p-2 rounded mb-2 ${selectedQuizAnswer === currentQuiz.correctAnswer ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                      {selectedQuizAnswer === currentQuiz.correctAnswer ? '✅ Correct!' : `❌ Answer: ${currentQuiz.correctAnswer}`}
+                      {selectedQuizAnswer === currentQuiz.correctAnswer ? '[OK] Correct!' : `[X] Answer: ${currentQuiz.correctAnswer}`}
                     </p>
                   )}
                   <div className="mb-3">
@@ -388,9 +388,9 @@ export default function LessonRenderer() {
                     {!quizSubmitted ? (
                       <button onClick={handleQuizSubmit} disabled={!selectedQuizAnswer} className="flex-1 bg-[#ED8936] hover:bg-orange-500 text-white text-xs py-2 rounded-lg font-bold disabled:opacity-50">Check Answers</button>
                     ) : currentQuizIndex < lesson.quiz.length - 1 ? (
-                      <button onClick={handleNextQuiz} className="flex-1 bg-[#1A365D] hover:bg-blue-900 text-white text-xs py-2 rounded-lg font-bold">Next Question →</button>
+                      <button onClick={handleNextQuiz} className="flex-1 bg-[#1A365D] hover:bg-blue-900 text-white text-xs py-2 rounded-lg font-bold">Next Question ?</button>
                     ) : (
-                      <div className="flex-1 bg-green-100 text-green-800 text-xs py-2 rounded-lg font-bold text-center">🎉 Quiz Complete! Score: {quizScore}/{lesson.quiz.length}</div>
+                      <div className="flex-1 bg-green-100 text-green-800 text-xs py-2 rounded-lg font-bold text-center">[Done] Quiz Complete! Score: {quizScore}/{lesson.quiz.length}</div>
                     )}
                   </div>
                 </div>
@@ -402,3 +402,4 @@ export default function LessonRenderer() {
     </div>
   );
 }
+
