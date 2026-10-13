@@ -42,8 +42,14 @@ export const ACHIEVEMENTS = {
   },
 };
 
+// Get an achievement by key
+export function getAchievement(key) {
+  return Object.values(ACHIEVEMENTS).find((a) => a.key === key) || null;
+}
+
 // Check which achievements should be unlocked based on progress
-export function computeUnlockedAchievements(progressItems) {
+// (Named this way because AchievementsContext.jsx imports this exact name)
+export function checkUnlockedAchievements(progressItems) {
   const completed = progressItems.filter((p) => p.completed).length;
 
   // Count per subject
@@ -70,9 +76,12 @@ export function computeUnlockedAchievements(progressItems) {
   return unlocked;
 }
 
+// Alias (kept for compatibility with the other version we wrote)
+export const computeUnlockedAchievements = checkUnlockedAchievements;
+
 // Sync computed achievements to Supabase
 export async function syncAchievements(progressItems) {
-  const computed = computeUnlockedAchievements(progressItems);
+  const computed = checkUnlockedAchievements(progressItems);
   const results = [];
   for (const ach of computed) {
     try {
