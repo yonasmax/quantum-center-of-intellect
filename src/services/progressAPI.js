@@ -6,15 +6,12 @@ import { supabase } from '../supabaseClient';
 // STABLE USER ID — uses email so it's the same across devices
 // ═══════════════════════════════════════════════════════════
 function getUserId() {
-  // First try the user object
   try {
     const stored = localStorage.getItem('user');
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Prefer email (stable across devices), fall back to _id
       const id = parsed.email || parsed._id || parsed.id;
       if (id) {
-        // Normalize: lowercase, remove spaces
         const normalized = String(id).toLowerCase().trim().replace(/\s+/g, '_');
         console.log('[progress] Using userId:', normalized);
         return normalized;
@@ -24,7 +21,6 @@ function getUserId() {
     console.warn('[progress] Failed to parse user:', e.message);
   }
 
-  // Try token
   const token = localStorage.getItem('token');
   if (token) {
     const normalized = String(token).toLowerCase().trim();
@@ -73,11 +69,10 @@ export const markLessonComplete = async (lessonId, timeSpentSeconds = 0, courseI
 };
 
 // ═══════════════════════════════════════════════════════════
-// MARK LESSON ACCESSED
+// MARK LESSON ACCESSED — DISABLED
+// We only save progress on explicit "Mark as Complete"
 // ═══════════════════════════════════════════════════════════
 export const markLessonAccessed = async (lessonId, timeSpentSeconds = 0) => {
-  // Disabled for now — we only save progress on explicit "Mark as Complete"
-  // This prevents creating rows with completed: false
   return;
 };
 

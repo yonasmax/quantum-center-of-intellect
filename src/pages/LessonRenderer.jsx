@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { client, urlFor } from '../sanityClient';
 import { useAuth } from '../context/AuthContext';
@@ -63,7 +63,6 @@ export default function LessonRenderer() {
 
   const startTimeRef = useRef(Date.now());
 
-  // Quiz state
   const [selectedPractice, setSelectedPractice] = useState({});
   const [practiceSubmitted, setPracticeSubmitted] = useState({});
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
@@ -83,14 +82,9 @@ export default function LessonRenderer() {
       });
   }, [lessonId]);
 
-  // Check if this lesson is already completed
   useEffect(() => {
     if (lessonId && isAuthenticated) {
       setCompleted(isLessonCompleted(lessonId));
-
-      // Track access
-      const timeOnSite = Math.round((Date.now() - startTimeRef.current) / 1000);
-      markAccessed(lessonId, Math.min(timeOnSite, 30));
     }
   }, [lessonId, isAuthenticated, isLessonCompleted]);
 
@@ -102,19 +96,23 @@ export default function LessonRenderer() {
 
     setMarking(true);
     const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
-    const result = await markComplete(lessonId, timeSpent, null, {
-  title: lesson.mainTopic || lesson.title || 'Lesson',
-  subject: lesson.subject || 'General',
-});
-  title: lesson.mainTopic || lesson.title || 'Lesson',
-  subject: lesson.subject || 'General',
-});
 
-    if (result.success) {
-      setCompleted(true);
-    } else {
+    try {
+      const result = await markComplete(lessonId, timeSpent, null, {
+        title: lesson.mainTopic || lesson.title || 'Lesson',
+        subject: lesson.subject || 'General',
+      });
+
+      if (result.success) {
+        setCompleted(true);
+      } else {
+        alert('Failed to save progress. Please try again.');
+      }
+    } catch (err) {
+      console.error('Mark complete error:', err);
       alert('Failed to save progress. Please try again.');
     }
+
     setMarking(false);
   };
 
@@ -175,7 +173,6 @@ export default function LessonRenderer() {
           </div>
         </div>
 
-        {/* Progress Bar */}
         {isAuthenticated && (
           <div className="px-6 py-2 bg-[#F5F7FA] border-t border-gray-200">
             <div className="flex items-center justify-between text-xs mb-1">
@@ -305,7 +302,6 @@ export default function LessonRenderer() {
                 </div>
               )}
 
-              {/* Mark Complete Button */}
               {isAuthenticated && (
                 <div className="bg-white p-6 rounded-xl shadow-sm border-2 border-[#ED8936]">
                   <div className="flex items-center justify-between">
