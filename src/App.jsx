@@ -1,32 +1,44 @@
 ﻿import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ProfileProvider } from './context/ProfileContext';
 import { ProgressProvider } from './context/ProgressContext';
 import { AchievementsProvider } from './context/AchievementsContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Pages
+// Public pages
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import LessonRenderer from './pages/LessonRenderer';
+
+// Content
 import CourseCatalog from './pages/CourseCatalog';
+import LessonRenderer from './pages/LessonRenderer';
+
+// Student features
+import Progress from './pages/Progress';
+import Certificates from './pages/Certificates';
+import CertificateView from './pages/CertificateView';
+import Leaderboard from './pages/Leaderboard';
+
+// Payments
+import Pricing from './pages/Pricing';
+import Payments from './pages/Payments';
+import PaymentHistory from './pages/PaymentHistory';
+import Subscriptions from './pages/Subscriptions';
+
+// Admin
+import AdminDashboard from './pages/AdminDashboard';
+
+// Teacher
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherAnalytics from './pages/TeacherAnalytics';
 import TeacherStudents from './pages/TeacherStudents';
 import TeacherStudentDetail from './pages/TeacherStudentDetail';
 import CreateLesson from './pages/CreateLesson';
 import ImportLessons from './pages/ImportLessons';
-import Progress from './pages/Progress';
-import Certificates from './pages/Certificates';
-import CertificateView from './pages/CertificateView';
-import Leaderboard from './pages/Leaderboard';
-import Pricing from './pages/Pricing';
-import Payments from './pages/Payments';
-import Subscriptions from './pages/Subscriptions';
-import PaymentHistory from './pages/PaymentHistory';
 
 function AppRoutes() {
   return (
@@ -55,6 +67,9 @@ function AppRoutes() {
       <Route path="/payments/history" element={<PaymentHistory />} />
       <Route path="/subscriptions" element={<Subscriptions />} />
 
+      {/* Admin */}
+      <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+
       {/* Teacher */}
       <Route path="/teacher" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} />
       <Route path="/teacher/analytics" element={<ProtectedRoute><TeacherAnalytics /></ProtectedRoute>} />
@@ -71,11 +86,13 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ProgressProvider>
-          <AchievementsProvider>
-            <AppRoutes />
-          </AchievementsProvider>
-        </ProgressProvider>
+        <ProfileProvider>
+          <ProgressProvider>
+            <AchievementsProvider>
+              <AppRoutes />
+            </AchievementsProvider>
+          </ProgressProvider>
+        </ProfileProvider>
       </AuthProvider>
     </BrowserRouter>
   );
