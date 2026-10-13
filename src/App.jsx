@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProfileProvider } from './context/ProfileContext';
@@ -67,17 +67,73 @@ function AppRoutes() {
       <Route path="/payments/history" element={<PaymentHistory />} />
       <Route path="/subscriptions" element={<Subscriptions />} />
 
-      {/* Admin */}
-      <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+      {/* Admin ? requires admin role */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute requireRole="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* Teacher */}
-      <Route path="/teacher" element={<ProtectedRoute><TeacherDashboard /></ProtectedRoute>} />
-      <Route path="/teacher/analytics" element={<ProtectedRoute><TeacherAnalytics /></ProtectedRoute>} />
-      <Route path="/teacher/students" element={<ProtectedRoute><TeacherStudents /></ProtectedRoute>} />
-      <Route path="/teacher/students/:studentId" element={<ProtectedRoute><TeacherStudentDetail /></ProtectedRoute>} />
-      <Route path="/teacher/create" element={<ProtectedRoute><CreateLesson /></ProtectedRoute>} />
-      <Route path="/teacher/edit/:lessonId" element={<ProtectedRoute><CreateLesson /></ProtectedRoute>} />
-      <Route path="/teacher/import" element={<ProtectedRoute><ImportLessons /></ProtectedRoute>} />
+      {/* Teacher ? requires teacher role */}
+      <Route
+        path="/teacher"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <TeacherDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/analytics"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <TeacherAnalytics />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/students"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <TeacherStudents />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/students/:studentId"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <TeacherStudentDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/create"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <CreateLesson />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/edit/:lessonId"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <CreateLesson />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/import"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <ImportLessons />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

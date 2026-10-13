@@ -1,40 +1,59 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useAuth } from './AuthContext';
-import { getMyProfile } from '../services/profilesAPI';
+import { supabase } from '../supabaseClient';
 
 const ProfileContext = createContext();
 
 export const useProfile = () => useContext(ProfileContext);
 
+function getEmailFromStorage() {
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed.email || parsed._id || parsed.id || null;
+  } catch (e) {
+    console.warn('[profile] localStorage parse error:', e.message);
+    return null;
+  }
+}
+
 export function ProfileProvider({ children }) {
-  const { isAuthenticated } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  console.log('[ProfileContext] isAuthenticated =', isAuthenticated);  // ADD THIS
-  if (!isAuthenticated) {  
-useEffect(() => {
-    if (!isAuthenticated) {
+  useEffect(() => {
+    const email = getEmailFromStorage();
+    console.log('[profile] Loading profile for:', email);
+
+    if (!email) {
+      console.log('[profile] No email in localStorage');
       setProfile(null);
       setLoading(false);
       return;
     }
 
-    let cancelled = false;
     (async () => {
-      setLoading(true);
       try {
-        const res = await getMyProfile();
-        if (!cancelled) setProfile(res.data.profile);
-      } catch (err) {
-        console.error('[profile] Load failed:', err);
-      }
-      if (!cancelled) setLoading(false);
-    })();
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
 
-    return () => { cancelled = true; };
-  }, [isAuthenticated]);
+        if (error) {
+          console.error('[profile] Supabase error:', error);
+          setProfile(null);
+        } else {
+          console.log('[profile] Loaded:', data);
+          setProfile(data);
+        }
+      } catch (err) {
+        console.error('[profile] Fetch failed:', err);
+        setProfile(null);
+      }
+      setLoading(false);
+    })();
+  }, []);
 
   const isAdmin = profile?.role === 'admin';
   const isTeacher = profile?.role === 'teacher';
