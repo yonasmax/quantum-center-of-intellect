@@ -1,103 +1,86 @@
-﻿// src/pages/PaymentHistory.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getPlan } from '../data/plans';
-
-const PAYMENTS_KEY = 'qci_payments_v1';
+import { getMyPayments } from '../services/paymentsAPI';
 
 export default function PaymentHistory() {
   const { isAuthenticated } = useAuth();
   const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem(PAYMENTS_KEY);
-    if (saved) {
+    if (!isAuthenticated) return;
+    (async () => {
       try {
-        setPayments(JSON.parse(saved));
-      } catch {}
-    }
-  }, []);
+        const res = await getMyPayments();
+        setPayments(res.data.payments || []);
+      } catch (err) {
+        console.error(err);
+      }
+      setLoading(false);
+    })();
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
-      <header className="bg-[#1A365D] text-white p-6 shadow-lg">
-        <div className="max-w-4xl mx-auto">
-          <Link to="/subscriptions" className="text-xs opacity-80 hover:opacity-100 mb-2 block">
-            ← Back to Subscription
+    <div className="min-h-screen bg-[#F5F7FA] p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#1A365D]">Payment History</h1>
+          <Link to="/payments" className="text-sm bg-[#ED8936] text-white px-4 py-2 rounded-lg font-bold">
+            Make Payment
           </Link>
-          <h1 className="text-2xl font-bold">📜 Payment History</h1>
-          <p className="text-sm opacity-80 mt-1">All your past transactions</p>
-        </div>
-      </header>
-
-      <div className="max-w-4xl mx-auto p-6">
-        {/* Summary */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <p className="text-xs text-gray-500 font-medium uppercase">Total Payments</p>
-            <p className="text-3xl font-bold text-[#1A365D] mt-1">{payments.length}</p>
-          </div>
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <p className="text-xs text-gray-500 font-medium uppercase">Total Paid</p>
-            <p className="text-3xl font-bold text-[#ED8936] mt-1">{totalPaid} ETB</p>
-          </div>
         </div>
 
-        {/* Payments list */}
-        {payments.length === 0 ? (
-          <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center">
-            <div className="text-6xl mb-4">💳</div>
-            <h2 className="font-bold text-[#1A365D] text-xl mb-2">No Payments Yet</h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Once you make a payment, it will appear here.
-            </p>
-            <Link
-              to="/pricing"
-              className="inline-block bg-[#ED8936] hover:bg-orange-500 text-white px-6 py-3 rounded-lg font-bold"
-            >
-              View Plans →
-            </Link>
+        {loading ? (
+          <div className="bg-white p-8 rounded-xl text-center text-gray-500">
+            Loading...
+          </div>
+        ) : payments.length === 0 ? (
+          <div className="bg-white p-12 rounded-xl text-center">
+            <p className="text-gray-600">No payments yet.</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            {payments.map((payment, i) => {
-              const plan = getPlan(payment.planId);
-              return (
-                <div
-                  key={i}
-                  className={`p-5 flex items-center gap-4 ${
-                    i !== payments.length - 1 ? 'border-b border-gray-100' : ''
-                  }`}
-                >
-                  <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl">
-                    ✓
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-[#1A365D]">
-                      {plan?.name || 'Subscription'} Payment
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {payment.method || 'Telebirr'} ·{' '}
-                      {new Date(payment.date).toLocaleDateString('en-GB')}
-                    </p>
-                    {payment.reference && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        Ref: {payment.reference}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-[#1A365D]">{payment.amount} ETB</p>
-                    <p className="text-xs text-green-600 font-bold">Completed</p>
-                  </div>
-                </div>
-              );
-            })}
+            <table className="w-full text-sm">
+              <thead className="bg-[#1A365D] text-white">
+                <tr>
+                  <th className="text-left p-3">Date</th>
+                  <th className="text-left p-3">Plan</th>
+                  <th className="text-left p-3">Amount</th>
+                  <th className="text-left p-3">Method</th>
+                  <th className="text-left p-3">Status</th>
+                  <th className="text-left p-3">Reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((p) => (
+                  <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="p-3">{new Date(p.created_at).toLocaleDateString()}</td>
+                    <td className="p-3">{p.plan_name}</td>
+                    <td className="p-3 font-bold">
+                      {p.amount} {p.currency}
+                    </td>
+                    <td className="p-3 uppercase text-xs">{p.method}</td>
+                    <td className="p-3">
+                      <span
+                        className={`text-xs font-bold px-2 py-1 rounded-full ${
+                          p.status === 'completed'
+                            ? 'bg-green-100 text-green-700'
+                            : p.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="p-3 text-xs text-gray-500">{p.reference || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
