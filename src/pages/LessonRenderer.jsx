@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { client, urlFor } from '../sanityClient';
 import { useAuth } from '../context/AuthContext';
-import { useProgress } from '../context/ProgressContext';
+import { saveLessonProgress } from '../utils/directProgress';
 import ImageFigure from '../components/figures/ImageFigure';
 import TableFigure from '../components/figures/TableFigure';
 import BarChartFigure from '../components/figures/BarChartFigure';
@@ -54,7 +54,6 @@ const renderBlock = (block, index) => {
 export default function LessonRenderer() {
   const { lessonId } = useParams();
   const { user, isAuthenticated } = useAuth();
-  const { markComplete, markAccessed, isLessonCompleted, getLessonTime } = useProgress();
 
   const [lesson, setLesson] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -82,12 +81,6 @@ export default function LessonRenderer() {
       });
   }, [lessonId]);
 
-  useEffect(() => {
-    if (lessonId && isAuthenticated) {
-      setCompleted(isLessonCompleted(lessonId));
-    }
-  }, [lessonId, isAuthenticated, isLessonCompleted]);
-
   const handleMarkComplete = async () => {
     if (!isAuthenticated) {
       alert('Please log in to save your progress.');
@@ -97,22 +90,16 @@ export default function LessonRenderer() {
     setMarking(true);
     const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
 
-    try {
-      const result = await markComplete(lessonId, timeSpent, null, {
-        title: lesson.mainTopic || lesson.title || 'Lesson',
-        subject: lesson.subject || 'General',
-      });
+    const result = await saveLessonProgress(lessonId, {
+      title: lesson.mainTopic || lesson.title || 'Lesson',
+      subject: lesson.subject || 'General',
+    }, timeSpent);
 
-      if (result.success) {
-        setCompleted(true);
-      } else {
-        alert('Failed to save progress. Please try again.');
-      }
-    } catch (err) {
-      console.error('Mark complete error:', err);
-      alert('Failed to save progress. Please try again.');
+    if (result.success) {
+      setCompleted(true);
+    } else {
+      alert('Failed to save: ' + (result.error || 'Unknown error'));
     }
-
     setMarking(false);
   };
 
@@ -148,7 +135,7 @@ export default function LessonRenderer() {
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-[#1A365D] rounded-lg flex items-center justify-center">
-              <span className="text-white text-lg">QC</span>
+              <span className="text-white text-lg font-bold">Q</span>
             </div>
             <div>
               <h1 className="font-bold text-[#1A365D] leading-tight">Quantum Center of Intellect</h1>
@@ -178,9 +165,6 @@ export default function LessonRenderer() {
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-gray-600 font-medium">
                 {completed ? '[OK] Completed' : '[Book] In Progress'}
-              </span>
-              <span className="text-gray-500">
-                Time: {Math.round(getLessonTime(lessonId) / 60)} min
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -214,7 +198,7 @@ export default function LessonRenderer() {
                     <div>
                       <p className="font-bold text-gray-700">Objectives:</p>
                       <ul className="text-gray-600 text-xs mt-1 space-y-0.5">
-                        {lesson.objectives?.map((obj, i) => <li key={i}>? {obj}</li>)}
+                        {lesson.objectives?.map((obj, i) => <li key={i}>- {obj}</li>)}
                       </ul>
                     </div>
                   </div>
@@ -350,7 +334,7 @@ export default function LessonRenderer() {
                   <ul className="space-y-2 text-xs text-gray-700">
                     {lesson.takeaways.map((t, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <span className="text-[#ED8936] mt-0.5">></span>
+                        <span className="text-[#ED8936] mt-0.5">-</span>
                         <span>{t}</span>
                       </li>
                     ))}
@@ -388,7 +372,7 @@ export default function LessonRenderer() {
                     {!quizSubmitted ? (
                       <button onClick={handleQuizSubmit} disabled={!selectedQuizAnswer} className="flex-1 bg-[#ED8936] hover:bg-orange-500 text-white text-xs py-2 rounded-lg font-bold disabled:opacity-50">Check Answers</button>
                     ) : currentQuizIndex < lesson.quiz.length - 1 ? (
-                      <button onClick={handleNextQuiz} className="flex-1 bg-[#1A365D] hover:bg-blue-900 text-white text-xs py-2 rounded-lg font-bold">Next Question ?</button>
+                      <button onClick={handleNextQuiz} className="flex-1 bg-[#1A365D] hover:bg-blue-900 text-white text-xs py-2 rounded-lg font-bold">Next Question</button>
                     ) : (
                       <div className="flex-1 bg-green-100 text-green-800 text-xs py-2 rounded-lg font-bold text-center">[Done] Quiz Complete! Score: {quizScore}/{lesson.quiz.length}</div>
                     )}
@@ -402,4 +386,3 @@ export default function LessonRenderer() {
     </div>
   );
 }
-
