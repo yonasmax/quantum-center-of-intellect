@@ -11,7 +11,10 @@ export function ProfileProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useEffect(() => {
+  console.log('[ProfileContext] isAuthenticated =', isAuthenticated);  // ADD THIS
+  if (!isAuthenticated) {  
+useEffect(() => {
     if (!isAuthenticated) {
       setProfile(null);
       setLoading(false);
