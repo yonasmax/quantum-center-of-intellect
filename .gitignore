@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local setup scripts (contain secrets)
+setup.js
+setup.ps1
+setup.txt
+setup-roles.ps1
+.env.setup
+setup-output.txt
