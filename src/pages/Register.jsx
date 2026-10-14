@@ -1,3 +1,4 @@
+import { sendWelcomeEmail } from '../utils/emailClient';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +18,15 @@ export default function Register() {
     grade: '9',
     phone: '',
   });
+// Send welcome email (fire and forget — don't block registration)
+if (result && !result.error) {
+  try {
+    await sendWelcomeEmail(formData.email, formData.fullName);
+    console.log('[register] Welcome email sent');
+  } catch (emailErr) {
+    console.warn('[register] Welcome email failed:', emailErr.message);
+  }
+}
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
