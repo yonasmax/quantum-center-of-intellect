@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProgress } from '../context/ProgressContext';
 import { issueCertificate, getMyCertificates } from '../services/certificatesAPI';
+import { sendCertificateEmail } from '../utils/emailClient';
 
 export default function Certificates() {
   const { user, isAuthenticated } = useAuth();
@@ -29,24 +30,50 @@ export default function Certificates() {
       }));
   }, [progressMap, user]);
 
-  // Persist certificates to Supabase when they change
+  // Persist certificates to Supabase when they change + email on new ones
   useEffect(() => {
     if (!isAuthenticated || computed.length === 0) return;
 
     let cancelled = false;
     (async () => {
       setSyncing(true);
+
+      // Load what's already saved so we can detect NEW ones
+      let existingSubjects = new Set();
+      try {
+        const existing = await getMyCertificates();
+        existingSubjects = new Set(
+          (existing.data.certificates || []).map((c) => c.subject)
+        );
+      } catch {}
+
       for (const cert of computed) {
         try {
           await issueCertificate(
             cert.subject,
             cert.lessonsCompleted,
-            user?.fullName || 'Student'
+            user?.fullName || user?.email || 'Student'
           );
+
+          // Only send email if this subject was NOT in the existing list
+          if (!existingSubjects.has(cert.subject) && user?.email) {
+            try {
+              await sendCertificateEmail(
+                user.email,
+                user.fullName || user.email,
+                cert.subject,
+                cert.lessonsCompleted
+              );
+              console.log('[certificates] Email sent for:', cert.subject);
+            } catch (emailErr) {
+              console.warn('[certificates] Email failed:', emailErr.message);
+            }
+          }
         } catch (err) {
           console.warn('[certificates] Issue failed:', err.message);
         }
       }
+
       try {
         const res = await getMyCertificates();
         if (!cancelled) setSavedCerts(res.data.certificates || []);

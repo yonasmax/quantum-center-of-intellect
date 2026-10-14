@@ -1,6 +1,7 @@
 // src/utils/achievements.js
-// Achievement definitions + Supabase sync
+// Achievement definitions + Supabase sync + email notifications
 import { unlockAchievement, getMyAchievements } from '../services/achievementsAPI';
+import { sendAchievementEmail } from './emailClient';
 
 // All possible achievements in the app
 export const ACHIEVEMENTS = {
@@ -48,18 +49,15 @@ export function getAchievement(key) {
 }
 
 // Check which achievements should be unlocked based on progress
-// (Named this way because AchievementsContext.jsx imports this exact name)
 export function checkUnlockedAchievements(progressItems) {
   const completed = progressItems.filter((p) => p.completed).length;
 
-  // Count per subject
   const subjectCounts = {};
   progressItems.forEach((p) => {
     if (!p.completed || !p.lesson?.subject) return;
     subjectCounts[p.lesson.subject] = (subjectCounts[p.lesson.subject] || 0) + 1;
   });
 
-  // Week count (last 7 days)
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const weekCount = progressItems.filter(
     (p) => p.completed && p.completedAt && new Date(p.completedAt).getTime() > weekAgo
@@ -76,17 +74,56 @@ export function checkUnlockedAchievements(progressItems) {
   return unlocked;
 }
 
-// Alias (kept for compatibility with the other version we wrote)
 export const computeUnlockedAchievements = checkUnlockedAchievements;
 
-// Sync computed achievements to Supabase
+// Helper: get current user's email + name from Supabase session
+async function getCurrentUser() {
+  try {
+    const { supabase } = await import('../supabaseClient');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return null;
+    return {
+      email: session.user.email,
+      name: session.user.user_metadata?.fullName || session.user.email,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Sync computed achievements to Supabase + send email on NEW unlocks
 export async function syncAchievements(progressItems) {
   const computed = checkUnlockedAchievements(progressItems);
+  if (computed.length === 0) return [];
+
+  const user = await getCurrentUser();
   const results = [];
+
   for (const ach of computed) {
     try {
       const res = await unlockAchievement(ach.key, ach.title, ach.description);
-      results.push(res.data.achievement);
+      const row = res.data.achievement;
+      results.push(row);
+
+      // Only send email if this was a NEW unlock (Supabase upsert returns row with created_at == unlocked_at)
+      // Simple heuristic: check if the achievement was just created (within last 5 seconds)
+      if (user && row?.unlocked_at) {
+        const unlockedAt = new Date(row.unlocked_at).getTime();
+        const isNew = Date.now() - unlockedAt < 5000;
+        if (isNew) {
+          try {
+            await sendAchievementEmail(
+              user.email,
+              user.name,
+              ach.title,
+              ach.description
+            );
+            console.log('[achievements] Email sent for:', ach.key);
+          } catch (emailErr) {
+            console.warn('[achievements] Email failed:', emailErr.message);
+          }
+        }
+      }
     } catch (err) {
       console.warn('[achievements] Sync failed for', ach.key, err.message);
     }
