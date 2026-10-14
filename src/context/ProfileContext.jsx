@@ -12,7 +12,13 @@ function getEmailFromStorage() {
     const raw = localStorage.getItem('user');
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return parsed.email || parsed._id || parsed.id || null;
+    const email = parsed.email || parsed._id || parsed.id || null;
+    if (!email) return null;
+    // Sanitize: lowercase, trim whitespace, remove newlines
+    const cleaned = String(email).toLowerCase().trim().replace(/\s+/g, '');
+    console.log('[profile] Raw email:', JSON.stringify(email));
+    console.log('[profile] Clean email:', JSON.stringify(cleaned));
+    return cleaned;
   } catch (e) {
     console.warn('[profile] localStorage parse error:', e.message);
     return null;
@@ -25,21 +31,21 @@ export function ProfileProvider({ children }) {
 
   useEffect(() => {
     const email = getEmailFromStorage();
-    console.log('[profile] Loading profile for:', email);
+    console.log('[profile] Final email:', email);
 
     if (!email) {
-      console.log('[profile] No email in localStorage');
+      console.log('[profile] No email');
       setLoading(false);
       return;
     }
 
     (async () => {
-      // Retry up to 3 times if network fails
       let lastError = null;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          const url = `${SUPABASE_URL}/rest/v1/profiles?select=*&email=eq.${encodeURIComponent(email)}&limit=1`;
-          console.log(`[profile] Attempt ${attempt}: ${url}`);
+          // Manually build query string (don't rely on encodeURIComponent twice)
+          const url = `${SUPABASE_URL}/rest/v1/profiles?select=*&email=eq.${encodeURIComponent(email)}`;
+          console.log(`[profile] Attempt ${attempt} URL:`, url);
 
           const res = await fetch(url, {
             headers: {
@@ -49,35 +55,28 @@ export function ProfileProvider({ children }) {
             },
           });
 
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-          }
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
 
           const rows = await res.json();
-          console.log(`[profile] Attempt ${attempt} got:`, rows);
+          console.log(`[profile] Attempt ${attempt} rows:`, rows.length, 'data:', rows);
 
           if (rows.length > 0) {
-            console.log('[profile] Loaded:', rows[0]);
+            console.log('[profile] LOADED:', rows[0]);
             setProfile(rows[0]);
             setLoading(false);
             return;
           }
 
-          // rows is empty ? retry
-          lastError = 'No matching profile row';
+          lastError = 'Empty result';
         } catch (err) {
-          console.warn(`[profile] Attempt ${attempt} failed:`, err.message);
+          console.warn(`[profile] Attempt ${attempt} error:`, err.message);
           lastError = err.message;
         }
 
-        // Wait 1 second before retry
-        if (attempt < 3) {
-          await new Promise((r) => setTimeout(r, 1000));
-        }
+        if (attempt < 3) await new Promise((r) => setTimeout(r, 1000));
       }
 
       console.error('[profile] All attempts failed:', lastError);
-      setProfile(null);
       setLoading(false);
     })();
   }, []);
