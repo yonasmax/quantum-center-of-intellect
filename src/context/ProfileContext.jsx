@@ -34,7 +34,8 @@ export function ProfileProvider({ children }) {
 
     (async () => {
       try {
-        const url = `${SUPABASE_URL}/rest/v1/profiles?select=*&email=eq.${encodeURIComponent(email)}`;
+        const cacheBuster = Date.now();
+const url = `${SUPABASE_URL}/rest/v1/profiles?select=*&email=eq.${encodeURIComponent(email)}&_t=${cacheBuster}`;
         console.log('[profile] Fetching:', url);
 
         const res = await fetch(url, {
