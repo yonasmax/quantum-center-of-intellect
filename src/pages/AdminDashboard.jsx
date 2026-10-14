@@ -8,6 +8,7 @@ import {
 } from '../services/profilesAPI';
 import CreateUserModal from '../components/CreateUserModal';
 import AssignTeacherModal from '../components/AssignTeacherModal';
+import EnrollStudentModal from '../components/EnrollStudentModal';
 
 export default function AdminDashboard() {
   const { isAdmin, loading: profileLoading } = useProfile();
@@ -18,6 +19,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState('teachers');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [assigningTeacher, setAssigningTeacher] = useState(null);
+  const [enrollingStudent, setEnrollingStudent] = useState(null);
 
   const loadData = async () => {
     try {
@@ -155,12 +157,18 @@ export default function AdminDashboard() {
                       student
                     </span>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     {studentEnrollments(s.email).map((e, i) => (
                       <span key={i} className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
                         {e.subject} - {e.grade}
                       </span>
                     ))}
+                    <button
+                      onClick={() => setEnrollingStudent(s)}
+                      className="text-xs bg-[#1A365D] hover:bg-blue-900 text-white px-3 py-1 rounded font-bold"
+                    >
+                      + Enroll Class
+                    </button>
                   </div>
                 </div>
               ))
@@ -198,6 +206,15 @@ export default function AdminDashboard() {
           teacher={assigningTeacher}
           existingAssignments={teacherAssignments(assigningTeacher.email)}
           onClose={() => setAssigningTeacher(null)}
+          onChanged={() => loadData()}
+        />
+      )}
+
+      {enrollingStudent && (
+        <EnrollStudentModal
+          student={enrollingStudent}
+          existingEnrollments={studentEnrollments(enrollingStudent.email)}
+          onClose={() => setEnrollingStudent(null)}
           onChanged={() => loadData()}
         />
       )}
