@@ -1,36 +1,28 @@
 // src/utils/directProgress.js
-// Direct Supabase save - bypasses ProgressContext
+// Direct Supabase save ? reads user from Supabase Auth session
 import { supabase } from '../supabaseClient';
 
-export function getStableUserId() {
+async function getStableUserId() {
   try {
-    const stored = localStorage.getItem('user');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      const id = parsed.email || parsed._id || parsed.id;
-      if (id) {
-        return String(id).toLowerCase().trim().replace(/\s+/g, '_');
-      }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.email) {
+      return session.user.email.toLowerCase().trim();
     }
   } catch (e) {
-    console.warn('[directProgress] Parse error:', e.message);
+    console.warn('[directProgress] Session read failed:', e.message);
   }
-  const token = localStorage.getItem('token');
-  if (token) return String(token).toLowerCase().trim();
-  return 'anonymous';
+  return null;
 }
 
 export async function saveLessonProgress(lessonId, lessonMeta = {}, timeSpentSeconds = 0) {
-  const userId = getStableUserId();
+  const userId = await getStableUserId();
 
-  if (!userId || userId === 'anonymous') {
-    console.warn('[directProgress] No user - skipping save');
+  if (!userId) {
+    console.warn('[directProgress] No authenticated user');
     return { success: false, error: 'Not authenticated' };
   }
 
-  console.log('[directProgress] Saving for user:', userId);
-  console.log('[directProgress] Lesson:', lessonId);
-  console.log('[directProgress] Meta:', lessonMeta);
+  console.log('[directProgress] Saving for:', userId);
 
   const { data, error } = await supabase
     .from('progress')
@@ -59,8 +51,8 @@ export async function saveLessonProgress(lessonId, lessonMeta = {}, timeSpentSec
 }
 
 export async function loadUserProgress() {
-  const userId = getStableUserId();
-  if (!userId || userId === 'anonymous') return [];
+  const userId = await getStableUserId();
+  if (!userId) return [];
 
   const { data, error } = await supabase
     .from('progress')
@@ -74,3 +66,5 @@ export async function loadUserProgress() {
 
   return data || [];
 }
+
+export { getStableUserId };
