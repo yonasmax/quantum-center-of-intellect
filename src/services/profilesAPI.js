@@ -200,3 +200,16 @@ export const unenrollStudent = async (studentEmail, subject, grade) => {
   if (error) throw error;
   return { data: { success: true } };
 };
+
+
+// Toggle user active status via admin API
+export const toggleUserActive = async (email, isActive) => {
+  const res = await fetch('/api/admin/set-user-active', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, isActive }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to update user');
+  return { data: { success: true, profile: data.profile } };
+};
