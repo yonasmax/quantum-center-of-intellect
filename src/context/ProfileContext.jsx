@@ -34,39 +34,34 @@ export function ProfileProvider({ children }) {
 
     (async () => {
       try {
-        const cacheBuster = Date.now();
-const url = `${SUPABASE_URL}/rest/v1/profiles?select=*&email=eq.${encodeURIComponent(email)}&_t=${cacheBuster}`;
+        const url = `${SUPABASE_URL}/rest/v1/profiles?select=*&email=eq.${encodeURIComponent(email)}`;
         console.log('[profile] Fetching:', url);
 
         const res = await fetch(url, {
+          cache: 'no-store',  // browser cache bypass
           headers: {
             apikey: SUPABASE_KEY,
             Authorization: `Bearer ${SUPABASE_KEY}`,
+            'Cache-Control': 'no-cache',       // CDN bypass
+            'Pragma': 'no-cache',
           },
         });
 
         const text = await res.text();
-        console.log('[profile] Status:', res.status, 'Raw response:', text);
+        console.log('[profile] Status:', res.status, 'Raw:', text);
 
         let rows;
-        try {
-          rows = JSON.parse(text);
-        } catch (e) {
-          console.error('[profile] JSON parse error:', e.message);
-          setLoading(false);
-          return;
-        }
-
-        console.log('[profile] Parsed rows:', rows);
+        try { rows = JSON.parse(text); }
+        catch { setLoading(false); return; }
 
         if (Array.isArray(rows) && rows.length > 0) {
           console.log('[profile] LOADED:', rows[0]);
           setProfile(rows[0]);
         } else {
-          console.warn('[profile] No rows found. Array?', Array.isArray(rows), 'Length:', rows?.length);
+          console.warn('[profile] No rows');
         }
       } catch (err) {
-        console.error('[profile] Fetch error:', err.message);
+        console.error('[profile] Error:', err.message);
       }
       setLoading(false);
     })();
