@@ -104,3 +104,99 @@ export const getStudentProgress = async (studentEmail) => {
   if (error) throw error;
   return { data: { success: true, progress: data || [] } };
 };
+
+
+// ???????????????????????????????????????????????????????????
+// ADMIN ? WRITE FUNCTIONS
+// ???????????????????????????????????????????????????????????
+
+// NOTE: Creating auth users requires the service role key on the backend.
+// We use a Vercel serverless function to handle that securely.
+
+// Create a new user (student or teacher) via backend
+export const createUserByAdmin = async (userData) => {
+  const res = await fetch('/api/admin/create-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to create user');
+  return { data: { success: true, user: data.user } };
+};
+
+// Update a profile's role
+export const updateProfileRole = async (email, role) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ role })
+    .eq('email', email)
+    .select()
+    .single();
+  if (error) throw error;
+  return { data: { success: true, profile: data } };
+};
+
+// Deactivate / reactivate a user
+export const setUserActive = async (email, isActive) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ is_active: isActive })
+    .eq('email', email)
+    .select()
+    .single();
+  if (error) throw error;
+  return { data: { success: true, profile: data } };
+};
+
+// Assign a teacher to a (subject, grade)
+export const assignTeacher = async (teacherEmail, subject, grade) => {
+  const { data, error } = await supabase
+    .from('teacher_assignments')
+    .upsert(
+      { teacher_id: teacherEmail, subject, grade },
+      { onConflict: 'teacher_id,subject,grade' }
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return { data: { success: true, assignment: data } };
+};
+
+// Remove a teacher assignment
+export const unassignTeacher = async (teacherEmail, subject, grade) => {
+  const { error } = await supabase
+    .from('teacher_assignments')
+    .delete()
+    .eq('teacher_id', teacherEmail)
+    .eq('subject', subject)
+    .eq('grade', grade);
+  if (error) throw error;
+  return { data: { success: true } };
+};
+
+// Enroll a student in a (subject, grade)
+export const enrollStudent = async (studentEmail, subject, grade) => {
+  const { data, error } = await supabase
+    .from('student_enrollments')
+    .upsert(
+      { student_id: studentEmail, subject, grade },
+      { onConflict: 'student_id,subject,grade' }
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return { data: { success: true, enrollment: data } };
+};
+
+// Remove a student enrollment
+export const unenrollStudent = async (studentEmail, subject, grade) => {
+  const { error } = await supabase
+    .from('student_enrollments')
+    .delete()
+    .eq('student_id', studentEmail)
+    .eq('subject', subject)
+    .eq('grade', grade);
+  if (error) throw error;
+  return { data: { success: true } };
+};
