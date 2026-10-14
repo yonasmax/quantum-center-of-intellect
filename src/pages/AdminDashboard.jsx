@@ -6,6 +6,7 @@ import {
   getAllTeacherAssignments,
   getAllStudentEnrollments,
 } from '../services/profilesAPI';
+import CreateUserModal from '../components/CreateUserModal';
 
 export default function AdminDashboard() {
   const { isAdmin, loading: profileLoading } = useProfile();
@@ -14,24 +15,27 @@ export default function AdminDashboard() {
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('teachers');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const loadData = async () => {
+    try {
+      const [p, a, e] = await Promise.all([
+        getAllProfiles(),
+        getAllTeacherAssignments(),
+        getAllStudentEnrollments(),
+      ]);
+      setProfiles(p.data.profiles);
+      setAssignments(a.data.assignments);
+      setEnrollments(e.data.enrollments);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (!isAdmin) return;
-    (async () => {
-      try {
-        const [p, a, e] = await Promise.all([
-          getAllProfiles(),
-          getAllTeacherAssignments(),
-          getAllStudentEnrollments(),
-        ]);
-        setProfiles(p.data.profiles);
-        setAssignments(a.data.assignments);
-        setEnrollments(e.data.enrollments);
-      } catch (err) {
-        console.error(err);
-      }
-      setLoading(false);
-    })();
+    loadData();
   }, [isAdmin]);
 
   if (profileLoading) return <div className="p-10">Loading profile...</div>;
@@ -54,14 +58,21 @@ export default function AdminDashboard() {
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
             <p className="text-sm opacity-80 mt-1">Manage teachers, students, and assignments</p>
           </div>
-          <Link to="/dashboard" className="text-sm bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg font-bold">
-            Main Dashboard
-          </Link>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="text-sm bg-[#ED8936] hover:bg-orange-500 px-4 py-2 rounded-lg font-bold"
+            >
+              + Create User
+            </button>
+            <Link to="/dashboard" className="text-sm bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg font-bold">
+              Main Dashboard
+            </Link>
+          </div>
         </div>
       </header>
 
       <div className="max-w-6xl mx-auto p-6">
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <p className="text-xs text-gray-500 uppercase font-bold">Teachers</p>
@@ -77,7 +88,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2 mb-4">
           {['teachers', 'students', 'assignments'].map((t) => (
             <button
@@ -97,7 +107,7 @@ export default function AdminDashboard() {
         ) : tab === 'teachers' ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             {teachers.length === 0 ? (
-              <p className="p-6 text-gray-500">No teachers yet.</p>
+              <p className="p-6 text-gray-500">No teachers yet. Click "+ Create User" to add one.</p>
             ) : (
               teachers.map((t) => (
                 <div key={t.id} className="p-4 border-b border-gray-100 last:border-b-0">
@@ -124,7 +134,7 @@ export default function AdminDashboard() {
         ) : tab === 'students' ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             {students.length === 0 ? (
-              <p className="p-6 text-gray-500">No students yet.</p>
+              <p className="p-6 text-gray-500">No students yet. Click "+ Create User" to add one.</p>
             ) : (
               students.map((s) => (
                 <div key={s.id} className="p-4 border-b border-gray-100 last:border-b-0">
@@ -165,6 +175,15 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {showCreateModal && (
+        <CreateUserModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => {
+            loadData();
+          }}
+        />
+      )}
     </div>
   );
 }
