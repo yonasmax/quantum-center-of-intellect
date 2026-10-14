@@ -1,10 +1,9 @@
 // api/send-email.js
 // Vercel Serverless Function ? sends emails via Resend
-// Uses CommonJS-style export for maximum compatibility with Vercel
+// Uses ES modules (package.json has "type": "module")
 
-const { Resend } = require('resend');
+import { Resend } from 'resend';
 
-// From address
 const FROM_EMAIL = 'Quantum Center <onboarding@resend.dev>';
 
 function welcomeEmailHtml(name) {
@@ -38,7 +37,7 @@ function certificateEmailHtml(name, subject, lessonsCompleted) {
       </div>
       <div style="padding:32px;background:#F5F7FA;">
         <h2 style="color:#1A365D;">Congrats, ${name}!</h2>
-        <p style="color:#4A5568;line-height:1.6;">You earned a Certificate in <strong style="color:#ED8936;">${subject}</strong> for completing ${lessonsCompleted} lessons!</p>
+        <p style="color:#4A5568;">You earned a Certificate in <strong style="color:#ED8936;">${subject}</strong> for completing ${lessonsCompleted} lessons!</p>
         <div style="text-align:center;margin:32px 0;">
           <a href="https://quantum-center-of-intellect-y25t.vercel.app/certificates"
              style="background:#ED8936;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;">
@@ -67,7 +66,7 @@ function achievementEmailHtml(name, title, description) {
   `;
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -117,4 +116,4 @@ module.exports = async function handler(req, res) {
     console.error('[send-email] Error:', err);
     return res.status(500).json({ error: err.message });
   }
-};
+}
