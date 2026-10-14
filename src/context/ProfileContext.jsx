@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
 
 const ProfileContext = createContext();
 
 export const useProfile = () => useContext(ProfileContext);
+
+const SUPABASE_URL = 'https://lookscjdmgoumfxjzzpy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ahqlznWQ4URCLL5zXmc6Kg_yJKi8WHE';
 
 function getEmailFromStorage() {
   try {
@@ -27,30 +29,55 @@ export function ProfileProvider({ children }) {
 
     if (!email) {
       console.log('[profile] No email in localStorage');
-      setProfile(null);
       setLoading(false);
       return;
     }
 
     (async () => {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('email', email)
-          .maybeSingle();
+      // Retry up to 3 times if network fails
+      let lastError = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const url = `${SUPABASE_URL}/rest/v1/profiles?select=*&email=eq.${encodeURIComponent(email)}&limit=1`;
+          console.log(`[profile] Attempt ${attempt}: ${url}`);
 
-        if (error) {
-          console.error('[profile] Supabase error:', error);
-          setProfile(null);
-        } else {
-          console.log('[profile] Loaded:', data);
-          setProfile(data);
+          const res = await fetch(url, {
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+              Accept: 'application/json',
+            },
+          });
+
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+
+          const rows = await res.json();
+          console.log(`[profile] Attempt ${attempt} got:`, rows);
+
+          if (rows.length > 0) {
+            console.log('[profile] Loaded:', rows[0]);
+            setProfile(rows[0]);
+            setLoading(false);
+            return;
+          }
+
+          // rows is empty ? retry
+          lastError = 'No matching profile row';
+        } catch (err) {
+          console.warn(`[profile] Attempt ${attempt} failed:`, err.message);
+          lastError = err.message;
         }
-      } catch (err) {
-        console.error('[profile] Fetch failed:', err);
-        setProfile(null);
+
+        // Wait 1 second before retry
+        if (attempt < 3) {
+          await new Promise((r) => setTimeout(r, 1000));
+        }
       }
+
+      console.error('[profile] All attempts failed:', lastError);
+      setProfile(null);
       setLoading(false);
     })();
   }, []);
