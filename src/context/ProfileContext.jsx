@@ -1,70 +1,81 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
 
 const ProfileContext = createContext();
 export const useProfile = () => useContext(ProfileContext);
-
-const SUPABASE_URL = 'https://lookscjdmgoumfxjzzpy.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_ahqlznWQ4URCLL5zXmc6Kg_yJKi8WHE';
-
-function getEmailFromStorage() {
-  try {
-    const raw = localStorage.getItem('user');
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const email = parsed.email || parsed._id || parsed.id;
-    if (!email) return null;
-    return String(email).toLowerCase().trim();
-  } catch (e) {
-    return null;
-  }
-}
 
 export function ProfileProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const email = getEmailFromStorage();
-    console.log('[profile] Email:', email);
+    let cancelled = false;
 
-    if (!email) {
-      setLoading(false);
-      return;
-    }
+    async function loadProfile() {
+      // Get Supabase Auth session
+      const { data: { session } } = await supabase.auth.getSession();
+      const email = session?.user?.email;
 
-    (async () => {
+      console.log('[profile] Session email:', email);
+
+      if (!email) {
+        if (!cancelled) {
+          setProfile(null);
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
-        const url = `${SUPABASE_URL}/rest/v1/profiles?select=*&email=eq.${encodeURIComponent(email)}`;
-        console.log('[profile] Fetching:', url);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
 
-        const res = await fetch(url, {
-          cache: 'no-store',  // browser cache bypass
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            'Cache-Control': 'no-cache',       // CDN bypass
-            'Pragma': 'no-cache',
-          },
-        });
-
-        const text = await res.text();
-        console.log('[profile] Status:', res.status, 'Raw:', text);
-
-        let rows;
-        try { rows = JSON.parse(text); }
-        catch { setLoading(false); return; }
-
-        if (Array.isArray(rows) && rows.length > 0) {
-          console.log('[profile] LOADED:', rows[0]);
-          setProfile(rows[0]);
+        if (error) {
+          console.error('[profile] Supabase error:', error);
+          if (!cancelled) setProfile(null);
         } else {
-          console.warn('[profile] No rows');
+          console.log('[profile] LOADED:', data);
+          if (!cancelled) setProfile(data);
         }
       } catch (err) {
-        console.error('[profile] Error:', err.message);
+        console.error('[profile] Fetch failed:', err);
+        if (!cancelled) setProfile(null);
       }
-      setLoading(false);
-    })();
+      if (!cancelled) setLoading(false);
+    }
+
+    loadProfile();
+
+    // Watch for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const email = session?.user?.email;
+        console.log('[profile] Auth changed. Email:', email);
+
+        if (!email) {
+          setProfile(null);
+          return;
+        }
+
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle()
+          .then(({ data }) => {
+            console.log('[profile] Reloaded:', data);
+            setProfile(data);
+          });
+      }
+    );
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const value = {
