@@ -1,11 +1,16 @@
 ﻿// src/supabaseClient.js
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Hardcoded because Vercel env vars kept getting corrupted.
+// TODO: Move back to env vars once Vercel env config is verified.
+const SUPABASE_URL = 'https://lookscjdmgoumfxjzzpy.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_ahqlznWQ4URCLL5zXmc6Kg_yJKi8WHE';
+
+console.log('[supabase] Initializing with URL:', SUPABASE_URL);
+console.log('[supabase] Key starts with:', SUPABASE_ANON_KEY.substring(0, 15));
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.warn('[supabase] Missing env vars — progress sync disabled');
+  console.warn('[supabase] Missing config!');
 }
 
-export const supabase = createClient(SUPABASE_URL || '', SUPABASE_ANON_KEY || '');
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
