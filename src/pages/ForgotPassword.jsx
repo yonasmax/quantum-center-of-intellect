@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { forgotPassword } from '../services/api';
+import { supabase } from '../supabaseClient';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -11,7 +11,10 @@ export default function ForgotPassword() {
     e.preventDefault();
     setLoading(true);
     try {
-      await forgotPassword(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
       setMessage('If an account exists with that email, a reset link has been sent. Check your inbox.');
     } catch (err) {
       setMessage('If an account exists with that email, a reset link has been sent.');
@@ -24,7 +27,7 @@ export default function ForgotPassword() {
     <div className="min-h-screen bg-[#F5F7FA] flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
         <div className="text-center mb-6">
-          <div className="text-5xl mb-3">🔑</div>
+          <div className="text-5xl mb-3">??</div>
           <h1 className="text-2xl font-bold text-[#1A365D] mb-1">Forgot Password?</h1>
           <p className="text-sm text-gray-500">Enter your email and we'll send a reset link</p>
         </div>
@@ -58,7 +61,7 @@ export default function ForgotPassword() {
 
         <div className="mt-6 pt-6 border-t border-gray-100 text-center">
           <Link to="/login" className="text-sm text-[#ED8936] hover:underline font-bold">
-            ← Back to Login
+            ? Back to Login
           </Link>
         </div>
       </div>
