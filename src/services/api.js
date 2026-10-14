@@ -1,7 +1,8 @@
 // frontend/src/services/api.js
+// Kept for non-auth API calls (courses, exams, certificates, notifications).
+// Auth is now handled by Supabase (see AuthContext.jsx).
 import axios from 'axios';
 
-// ⭐ Use /api proxy (Vercel forwards to Railway - no CORS!)
 const API_URL = '/api';
 
 const api = axios.create({
@@ -11,11 +12,17 @@ const api = axios.create({
   },
 });
 
+// Attach Supabase session token as Bearer (if available)
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    try {
+      const { data: { session } } = await import('../supabaseClient')
+        .then((m) => m.supabase.auth.getSession());
+      if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+      }
+    } catch (e) {
+      // ignore
     }
     return config;
   },
@@ -36,29 +43,15 @@ api.interceptors.response.use(
     }
 
     if (status === 401) {
-      const isLoginAttempt = err.config?.url?.includes('/auth/login');
-      const isRegisterAttempt = err.config?.url?.includes('/auth/register');
-      if (!isLoginAttempt && !isRegisterAttempt) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
-        }
+      // For non-auth routes, redirect to login
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
     }
 
     return Promise.reject(err);
   }
 );
-
-// AUTH
-export const register = (userData) => api.post('/auth/register', userData);
-export const login = (userData) => api.post('/auth/login', userData);
-export const getMe = () => api.get('/auth/me');
-export const changePassword = (data) => api.put('/auth/change-password', data);
-export const updateProfile = (data) => api.put('/auth/profile', data);
-export const forgotPassword = (email) => api.post('/auth/forgot-password', { email });
-export const resetPassword = (token, password) => api.put(`/auth/reset-password/${token}`, { password });
 
 // COURSES
 export const getCourses = (params) => api.get('/courses', { params });
