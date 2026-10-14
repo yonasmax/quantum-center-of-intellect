@@ -7,6 +7,7 @@ import {
   getAllStudentEnrollments,
 } from '../services/profilesAPI';
 import CreateUserModal from '../components/CreateUserModal';
+import AssignTeacherModal from '../components/AssignTeacherModal';
 
 export default function AdminDashboard() {
   const { isAdmin, loading: profileLoading } = useProfile();
@@ -16,6 +17,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('teachers');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [assigningTeacher, setAssigningTeacher] = useState(null);
 
   const loadData = async () => {
     try {
@@ -120,12 +122,18 @@ export default function AdminDashboard() {
                       teacher
                     </span>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     {teacherAssignments(t.email).map((a, i) => (
                       <span key={i} className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
                         {a.subject} - {a.grade}
                       </span>
                     ))}
+                    <button
+                      onClick={() => setAssigningTeacher(t)}
+                      className="text-xs bg-[#1A365D] hover:bg-blue-900 text-white px-3 py-1 rounded font-bold"
+                    >
+                      + Assign Class
+                    </button>
                   </div>
                 </div>
               ))
@@ -182,6 +190,15 @@ export default function AdminDashboard() {
           onCreated={() => {
             loadData();
           }}
+        />
+      )}
+
+      {assigningTeacher && (
+        <AssignTeacherModal
+          teacher={assigningTeacher}
+          existingAssignments={teacherAssignments(assigningTeacher.email)}
+          onClose={() => setAssigningTeacher(null)}
+          onChanged={() => loadData()}
         />
       )}
     </div>
