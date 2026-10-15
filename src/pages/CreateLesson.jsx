@@ -1,207 +1,289 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { client } from '../sanityClient';
-import { FiPlus, FiTrash2, FiSave } from 'react-icons/fi';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { saveLesson } from '../services/lessonsAPI';
 
-const SUBJECTS = [
-  'Mathematics',
-  'Environmental Science',
-  'General Science',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'English',
-  'Social Studies',
-  'Geography',
-  'History',
-  'Geez',
-];
-
-const GRADES = ['5', '6', '7', '8', '9', '10', '11', '12'];
+const SUBJECTS = ['Chemistry', 'Physics', 'Biology', 'Math', 'English', 'History', 'Geography'];
+const GRADES = ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
 export default function CreateLesson() {
   const navigate = useNavigate();
-  const { lessonId } = useParams();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     title: '',
     subject: 'Chemistry',
-    grade: '9',
-    lessonNumber: 1,
-    mainTopic: '',
+    grade: 'Grade 9',
+    lesson_number: '',
+    duration: 45,
+    objectivesText: '',
     competence: '',
-    objectives: [''],
-    quiz: [{ question: '', options: ['', '', ''], correctAnswer: '' }]
+    cover_image_url: '',
+    video_url: '',
+    takeawaysText: '',
+    is_published: false,
   });
 
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    if (lessonId) {
-      client.fetch(`*[_type == "lesson" && _id == $id][0]`, { id: lessonId })
-        .then((data) => { if (data) setFormData(data); });
-    }
-  }, [lessonId]);
-
-  const handleChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
-
-  const handleObjectiveChange = (i, v) => {
-    const n = [...formData.objectives]; n[i] = v;
-    handleChange('objectives', n);
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
-  const addObjective = () => handleChange('objectives', [...formData.objectives, '']);
-  const removeObjective = (i) => handleChange('objectives', formData.objectives.filter((_, idx) => idx !== i));
 
-  const handleQuizChange = (qi, field, value) => {
-    const newQuiz = [...formData.quiz];
-    if (field === 'question') newQuiz[qi].question = value;
-    if (field === 'correctAnswer') newQuiz[qi].correctAnswer = value;
-    if (field.startsWith('option-')) {
-      const oi = parseInt(field.split('-')[1]);
-      newQuiz[qi].options[oi] = value;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!formData.title.trim()) {
+      return setError('Title is required');
     }
-    handleChange('quiz', newQuiz);
-  };
-  const addQuiz = () => handleChange('quiz', [...formData.quiz, { question: '', options: ['', '', ''], correctAnswer: '' }]);
-  const removeQuiz = (i) => handleChange('quiz', formData.quiz.filter((_, idx) => idx !== i));
 
-  const handleSave = async () => {
     setSaving(true);
     try {
-      const doc = {
-        _type: 'lesson',
-        title: formData.title,
+      const objectives = formData.objectivesText
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const takeaways = formData.takeawaysText
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      await saveLesson({
+        title: formData.title.trim(),
         subject: formData.subject,
         grade: formData.grade,
-        lessonNumber: parseInt(formData.lessonNumber),
-        mainTopic: formData.mainTopic,
-        competence: formData.competence,
-        objectives: formData.objectives.filter(o => o.trim()),
-        quiz: formData.quiz.filter(q => q.question.trim())
-      };
+        lesson_number: formData.lesson_number ? Number(formData.lesson_number) : null,
+        duration: Number(formData.duration) || 45,
+        objectives,
+        competence: formData.competence.trim(),
+        content_blocks: [], // will be filled in Step 4
+        cover_image_url: formData.cover_image_url.trim() || null,
+        video_url: formData.video_url.trim() || null,
+        takeaways,
+        is_published: formData.is_published,
+      });
 
-      if (lessonId) {
-        await client.patch(lessonId).set(doc).commit();
-      } else {
-        await client.create(doc);
-      }
-      navigate('/teacher');
+      setSuccess(formData.is_published ? 'Lesson published!' : 'Lesson saved as draft!');
+      setTimeout(() => {
+        navigate('/teacher');
+      }, 1200);
     } catch (err) {
-      console.error('Save failed:', err);
-      alert('Save failed. Check your API token permissions.');
+      setError(err.message || 'Failed to save lesson');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
       <header className="bg-[#1A365D] text-white p-6 shadow-lg">
-        <h1 className="text-2xl font-bold">⚛️ {lessonId ? 'Edit' : 'Create'} Lesson</h1>
-        <p className="text-sm opacity-80">Quantum Center of Intellect</p>
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Create New Lesson</h1>
+            <p className="text-sm opacity-80 mt-1">Author content for your students</p>
+          </div>
+          <Link to="/teacher" className="text-sm bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg font-bold">
+            Back to Teacher Dashboard
+          </Link>
+        </div>
       </header>
 
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="font-bold text-[#1A365D] mb-4">Basic Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="text-sm font-bold text-gray-700 block mb-1">Lesson Title *</label>
-              <input type="text" value={formData.title} onChange={(e) => handleChange('title', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Introduction to the Atom" />
-            </div>
-            <div>
-              <label className="text-sm font-bold text-gray-700 block mb-1">Subject</label>
-              <select value={formData.subject} onChange={(e) => handleChange('subject', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2">
-                {SUBJECTS.map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-bold text-gray-700 block mb-1">Grade</label>
-              <select value={formData.grade} onChange={(e) => handleChange('grade', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2">
-                {GRADES.map(g => <option key={g}>{g}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-bold text-gray-700 block mb-1">Lesson Number</label>
-              <input type="number" value={formData.lessonNumber} onChange={(e) => handleChange('lessonNumber', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2" />
-            </div>
-            <div>
-              <label className="text-sm font-bold text-gray-700 block mb-1">Learning Competence</label>
-              <input type="text" value={formData.competence} onChange={(e) => handleChange('competence', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Atomic Theory Fundamentals" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="text-sm font-bold text-gray-700 block mb-1">Main Topic</label>
-              <input type="text" value={formData.mainTopic} onChange={(e) => handleChange('mainTopic', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Introduction to the Atom" />
-            </div>
+      <div className="max-w-4xl mx-auto p-6">
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg mb-4">
+            {success}
           </div>
-        </div>
+        )}
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-bold text-[#1A365D]">Learning Objectives</h2>
-            <button onClick={addObjective} className="text-sm bg-blue-50 text-[#1A365D] px-3 py-1 rounded-lg font-bold hover:bg-blue-100 flex items-center gap-1">
-              <FiPlus /> Add
-            </button>
-          </div>
-          {formData.objectives.map((obj, i) => (
-            <div key={i} className="flex gap-2 mb-2">
-              <input type="text" value={obj} onChange={(e) => handleObjectiveChange(i, e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2" placeholder={`Objective ${i + 1}`} />
-              {formData.objectives.length > 1 && (
-                <button onClick={() => removeObjective(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                  <FiTrash2 />
-                </button>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+              {error}
             </div>
-          ))}
-        </div>
+          )}
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-bold text-[#1A365D]">Quiz Questions</h2>
-            <button onClick={addQuiz} className="text-sm bg-blue-50 text-[#1A365D] px-3 py-1 rounded-lg font-bold hover:bg-blue-100 flex items-center gap-1">
-              <FiPlus /> Add Question
-            </button>
-          </div>
+          {/* BASIC INFO */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <h2 className="font-bold text-[#1A365D] text-lg">Basic Information</h2>
 
-          {formData.quiz.map((q, qi) => (
-            <div key={qi} className="bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200">
-              <div className="flex justify-between items-start mb-3">
-                <label className="text-sm font-bold text-gray-700">Question {qi + 1}</label>
-                {formData.quiz.length > 1 && (
-                  <button onClick={() => removeQuiz(qi)} className="text-red-500 text-sm hover:underline">Remove</button>
-                )}
+            <div>
+              <label className="text-sm font-bold text-gray-700 block mb-2">Lesson Title *</label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => handleChange('title', e.target.value)}
+                required
+                placeholder="Introduction to the Atom & Electron Configuration"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1A365D] outline-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-bold text-gray-700 block mb-2">Subject *</label>
+                <select
+                  value={formData.subject}
+                  onChange={(e) => handleChange('subject', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white outline-none"
+                >
+                  {SUBJECTS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
-              <input type="text" value={q.question} onChange={(e) => handleQuizChange(qi, 'question', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3" placeholder="What is the charge of a neutron?" />
-              <p className="text-xs font-bold text-gray-600 mb-2">Options (mark the correct one):</p>
-              {q.options.map((opt, oi) => (
-                <div key={oi} className="flex gap-2 mb-2 items-center">
-                  <input type="radio" name={`correct-${qi}`}
-                    checked={q.correctAnswer === opt && opt !== ''}
-                    onChange={() => handleQuizChange(qi, 'correctAnswer', opt)} />
-                  <input type="text" value={opt} onChange={(e) => handleQuizChange(qi, `option-${oi}`, e.target.value)}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm" placeholder={`Option ${oi + 1}`} />
-                </div>
-              ))}
+              <div>
+                <label className="text-sm font-bold text-gray-700 block mb-2">Grade *</label>
+                <select
+                  value={formData.grade}
+                  onChange={(e) => handleChange('grade', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white outline-none"
+                >
+                  {GRADES.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-          ))}
-        </div>
 
-        <div className="flex justify-end gap-3">
-          <button onClick={() => navigate('/teacher')} className="px-6 py-3 rounded-lg font-bold text-gray-600 hover:bg-gray-100">
-            Cancel
-          </button>
-          <button onClick={handleSave} disabled={saving || !formData.title.trim()}
-            className="bg-[#ED8936] hover:bg-orange-500 text-white px-8 py-3 rounded-lg font-bold flex items-center gap-2 shadow-md disabled:opacity-50">
-            <FiSave /> {saving ? 'Saving...' : 'Save Lesson'}
-          </button>
-        </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-bold text-gray-700 block mb-2">Lesson Number</label>
+                <input
+                  type="number"
+                  value={formData.lesson_number}
+                  onChange={(e) => handleChange('lesson_number', e.target.value)}
+                  placeholder="3"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-gray-700 block mb-2">Duration (minutes)</label>
+                <input
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => handleChange('duration', e.target.value)}
+                  placeholder="45"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* OBJECTIVES */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <h2 className="font-bold text-[#1A365D] text-lg">Learning Objectives</h2>
+
+            <div>
+              <label className="text-sm font-bold text-gray-700 block mb-2">
+                Objectives (one per line)
+              </label>
+              <textarea
+                value={formData.objectivesText}
+                onChange={(e) => handleChange('objectivesText', e.target.value)}
+                rows={4}
+                placeholder="Understand the Bohr Model&#10;Identify subatomic particles&#10;Calculate atomic mass"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none font-mono text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-bold text-gray-700 block mb-2">Learning Competence</label>
+              <input
+                type="text"
+                value={formData.competence}
+                onChange={(e) => handleChange('competence', e.target.value)}
+                placeholder="Atomic Theory Fundamentals"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
+              />
+            </div>
+          </div>
+
+          {/* MEDIA */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <h2 className="font-bold text-[#1A365D] text-lg">Media (optional)</h2>
+
+            <div>
+              <label className="text-sm font-bold text-gray-700 block mb-2">Cover Image URL</label>
+              <input
+                type="url"
+                value={formData.cover_image_url}
+                onChange={(e) => handleChange('cover_image_url', e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-bold text-gray-700 block mb-2">Video URL</label>
+              <input
+                type="url"
+                value={formData.video_url}
+                onChange={(e) => handleChange('video_url', e.target.value)}
+                placeholder="https://youtube.com/watch?v=..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
+              />
+            </div>
+          </div>
+
+          {/* TAKEAWAYS */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <h2 className="font-bold text-[#1A365D] text-lg">Key Takeaways</h2>
+            <div>
+              <label className="text-sm font-bold text-gray-700 block mb-2">
+                Takeaways (one per line)
+              </label>
+              <textarea
+                value={formData.takeawaysText}
+                onChange={(e) => handleChange('takeawaysText', e.target.value)}
+                rows={4}
+                placeholder="Atoms consist of a nucleus surrounded by electrons&#10;The Bohr model visualizes electrons in fixed orbits"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none font-mono text-sm"
+              />
+            </div>
+          </div>
+
+          {/* PUBLISH */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h2 className="font-bold text-[#1A365D] text-lg mb-4">Publish</h2>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.is_published}
+                onChange={(e) => handleChange('is_published', e.target.checked)}
+                className="w-5 h-5"
+              />
+              <span className="text-sm text-gray-700">
+                Publish immediately (visible to students in the catalog)
+              </span>
+            </label>
+            <p className="text-xs text-gray-500 mt-2">
+              If unchecked, the lesson is saved as a draft and only you can see it.
+            </p>
+          </div>
+
+          {/* ACTIONS */}
+          <div className="flex gap-3 justify-end">
+            <button
+              type="button"
+              onClick={() => navigate('/teacher')}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-bold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="bg-[#ED8936] hover:bg-orange-500 text-white px-8 py-3 rounded-lg font-bold disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : (formData.is_published ? 'Publish Lesson' : 'Save Draft')}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
