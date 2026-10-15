@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { saveLesson } from '../services/lessonsAPI';
+import { saveLesson, getLesson } from '../services/lessonsAPI';
+import ContentBlockEditor from '../components/ContentBlockEditor';
 
 const SUBJECTS = ['Chemistry', 'Physics', 'Biology', 'Math', 'English', 'History', 'Geography'];
 const GRADES = ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
 export default function CreateLesson() {
   const navigate = useNavigate();
+  const { lessonId } = useParams();  // present when editing
   const { user } = useAuth();
+  const isEditing = !!lessonId;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -24,9 +27,44 @@ export default function CreateLesson() {
     is_published: false,
   });
 
+  const [contentBlocks, setContentBlocks] = useState([]);
+  const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Load existing lesson when editing
+  useEffect(() => {
+    if (!isEditing) return;
+    (async () => {
+      try {
+        const res = await getLesson(lessonId);
+        const l = res.data.lesson;
+        if (!l) {
+          setError('Lesson not found');
+          setLoading(false);
+          return;
+        }
+        setFormData({
+          title: l.title || '',
+          subject: l.subject || 'Chemistry',
+          grade: l.grade || 'Grade 9',
+          lesson_number: l.lesson_number || '',
+          duration: l.duration || 45,
+          objectivesText: (l.objectives || []).join('\n'),
+          competence: l.competence || '',
+          cover_image_url: l.cover_image_url || '',
+          video_url: l.video_url || '',
+          takeawaysText: (l.takeaways || []).join('\n'),
+          is_published: l.is_published || false,
+        });
+        setContentBlocks(l.content_blocks || []);
+      } catch (err) {
+        setError('Failed to load lesson: ' + err.message);
+      }
+      setLoading(false);
+    })();
+  }, [isEditing, lessonId]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -54,6 +92,7 @@ export default function CreateLesson() {
         .filter(Boolean);
 
       await saveLesson({
+        lesson_id: isEditing ? lessonId : undefined,
         title: formData.title.trim(),
         subject: formData.subject,
         grade: formData.grade,
@@ -61,14 +100,14 @@ export default function CreateLesson() {
         duration: Number(formData.duration) || 45,
         objectives,
         competence: formData.competence.trim(),
-        content_blocks: [], // will be filled in Step 4
+        content_blocks: contentBlocks,
         cover_image_url: formData.cover_image_url.trim() || null,
         video_url: formData.video_url.trim() || null,
         takeaways,
         is_published: formData.is_published,
       });
 
-      setSuccess(formData.is_published ? 'Lesson published!' : 'Lesson saved as draft!');
+      setSuccess(isEditing ? 'Lesson updated!' : (formData.is_published ? 'Lesson published!' : 'Lesson saved as draft!'));
       setTimeout(() => {
         navigate('/teacher');
       }, 1200);
@@ -79,13 +118,23 @@ export default function CreateLesson() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
+        <p className="text-[#1A365D] font-bold">Loading lesson...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
       <header className="bg-[#1A365D] text-white p-6 shadow-lg">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Create New Lesson</h1>
-            <p className="text-sm opacity-80 mt-1">Author content for your students</p>
+            <h1 className="text-2xl font-bold">{isEditing ? 'Edit Lesson' : 'Create New Lesson'}</h1>
+            <p className="text-sm opacity-80 mt-1">
+              {isEditing ? 'Update content and republish' : 'Author content for your students'}
+            </p>
           </div>
           <Link to="/teacher" className="text-sm bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg font-bold">
             Back to Teacher Dashboard
@@ -203,6 +252,17 @@ export default function CreateLesson() {
             </div>
           </div>
 
+          {/* CONTENT BLOCKS */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <div>
+              <h2 className="font-bold text-[#1A365D] text-lg">Lesson Content</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Build your lesson from blocks ? headings, paragraphs, callouts, images, formulas, and quizzes.
+              </p>
+            </div>
+            <ContentBlockEditor blocks={contentBlocks} onChange={setContentBlocks} />
+          </div>
+
           {/* MEDIA */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
             <h2 className="font-bold text-[#1A365D] text-lg">Media (optional)</h2>
@@ -280,7 +340,13 @@ export default function CreateLesson() {
               disabled={saving}
               className="bg-[#ED8936] hover:bg-orange-500 text-white px-8 py-3 rounded-lg font-bold disabled:opacity-50"
             >
-              {saving ? 'Saving...' : (formData.is_published ? 'Publish Lesson' : 'Save Draft')}
+              {saving
+                ? 'Saving...'
+                : isEditing
+                  ? 'Save Changes'
+                  : formData.is_published
+                    ? 'Publish Lesson'
+                    : 'Save Draft'}
             </button>
           </div>
         </form>
