@@ -124,7 +124,7 @@ export default function CertificateView() {
           className="bg-white rounded-xl shadow-2xl overflow-hidden border-8 border-double border-[#ED8936]"
         >
           <div className="bg-gradient-to-br from-[#1A365D] to-[#2C4A7C] p-8 text-center text-white">
-            <div className="text-6xl mb-3">[ATOM]</div>
+            <div className="text-6xl mb-3">⚛️</div>
             <h1 className="text-3xl font-bold">Quantum Center of Intellect</h1>
             <p className="text-sm opacity-80 mt-2 tracking-widest uppercase">
               Certificate of Achievement
