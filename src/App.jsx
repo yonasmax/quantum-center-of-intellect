@@ -50,7 +50,7 @@ function AppRoutes() {
       <Route path="/certificates" element={<Certificates />} />
       <Route path="/certificates/:certificateId" element={<CertificateView />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
-      <Route path="/payments" element={<Payments />} />`n      <Route path="/payment-success" element={<PaymentSuccess />} />
+      <Route path="/payments" element={<Payments />} />`n      <Route path="/payment-success" element={<PaymentSuccess />} />`n      <Route path="/support" element={<Support />} />
       <Route path="/payments/history" element={<PaymentHistory />} />
       <Route path="/subscriptions" element={<Subscriptions />} />
       <Route path="/admin" element={<ProtectedRoute requireRole="admin"><AdminDashboard /></ProtectedRoute>} />
@@ -93,5 +93,6 @@ function App() {
 }
 
 export default App;
+
 
 
