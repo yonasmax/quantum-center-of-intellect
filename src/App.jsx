@@ -16,6 +16,7 @@ import ResetPassword from './pages/ResetPassword';
 // Content
 import CourseCatalog from './pages/CourseCatalog';
 import LessonRenderer from './pages/LessonRenderer';
+import StudentLessonViewer from './pages/StudentLessonViewer';
 
 // Student features
 import Progress from './pages/Progress';
@@ -55,6 +56,7 @@ function AppRoutes() {
       {/* Content */}
       <Route path="/catalog" element={<CourseCatalog />} />
       <Route path="/lesson/:lessonId" element={<LessonRenderer />} />
+      <Route path="/lesson-view/:lessonId" element={<StudentLessonViewer />} />
 
       {/* Student features */}
       <Route path="/progress" element={<Progress />} />
@@ -67,7 +69,7 @@ function AppRoutes() {
       <Route path="/payments/history" element={<PaymentHistory />} />
       <Route path="/subscriptions" element={<Subscriptions />} />
 
-      {/* Admin ? requires admin role */}
+      {/* Admin */}
       <Route
         path="/admin"
         element={
@@ -77,7 +79,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Teacher ? requires teacher role */}
+      {/* Teacher */}
       <Route
         path="/teacher"
         element={
