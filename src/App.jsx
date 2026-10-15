@@ -21,6 +21,7 @@ import CertificateView from './pages/CertificateView';
 import Leaderboard from './pages/Leaderboard';
 import Pricing from './pages/Pricing';
 import Payments from './pages/Payments';
+import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentHistory from './pages/PaymentHistory';
 import Subscriptions from './pages/Subscriptions';
 import AdminDashboard from './pages/AdminDashboard';
@@ -48,7 +49,7 @@ function AppRoutes() {
       <Route path="/certificates" element={<Certificates />} />
       <Route path="/certificates/:certificateId" element={<CertificateView />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
-      <Route path="/payments" element={<Payments />} />
+      <Route path="/payments" element={<Payments />} />`n      <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="/payments/history" element={<PaymentHistory />} />
       <Route path="/subscriptions" element={<Subscriptions />} />
       <Route path="/admin" element={<ProtectedRoute requireRole="admin"><AdminDashboard /></ProtectedRoute>} />
@@ -91,3 +92,4 @@ function App() {
 }
 
 export default App;
+
