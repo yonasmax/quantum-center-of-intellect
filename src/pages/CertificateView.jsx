@@ -17,24 +17,19 @@ export default function CertificateView() {
   const certificate = useMemo(() => {
     if (!certificateId) return null;
 
-    // certificateId format: "cert-chemistry-abc123" OR "cert-chemistry-anon"
-    // parts: ["cert", "chemistry", "abc123"]
     const parts = certificateId.split('-');
     const rawSubject = parts.length >= 2 ? parts[1] : parts[0];
     const uniqueId = parts.length >= 3 ? parts.slice(2).join('-') : parts[parts.length - 1];
 
-    // Find lessons with matching subject (case-insensitive)
     const lessons = Object.values(progressMap).filter((p) => {
       if (!p.completed || !p.lesson?.subject) return false;
       return p.lesson.subject.toLowerCase() === rawSubject.toLowerCase();
     });
 
-    // Use the actual subject casing from lessons if found, else capitalize
     const displaySubject = lessons[0]?.lesson?.subject
       || rawSubject.charAt(0).toUpperCase() + rawSubject.slice(1);
 
-    // Human-readable verification code
-    const verificationCode = `${rawSubject.toUpperCase()}-${uniqueId.toUpperCase()}`;
+    const verificationCode = rawSubject.toUpperCase() + '-' + uniqueId.toUpperCase();
 
     return {
       id: certificateId,
@@ -92,7 +87,7 @@ export default function CertificateView() {
       pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
 
       const safeSubject = certificate.subject.replace(/\s+/g, '-').toLowerCase();
-      pdf.save(`certificate-${safeSubject}-${certificate.verificationCode}.pdf`);
+      pdf.save('certificate-' + safeSubject + '-' + certificate.verificationCode + '.pdf');
     } catch (err) {
       console.error('[certificate] PDF generation failed:', err);
       alert('Failed to generate PDF: ' + err.message);
@@ -103,10 +98,9 @@ export default function CertificateView() {
   return (
     <div className="min-h-screen bg-[#F5F7FA] py-8">
       <div className="max-w-4xl mx-auto px-4">
-        {/* Navigation */}
         <div className="flex justify-between items-center mb-6 print:hidden">
           <Link to="/certificates" className="text-[#1A365D] hover:underline font-bold">
-            ← Back to Certificates
+            Back to Certificates
           </Link>
           <div className="flex gap-3">
             <button
@@ -125,13 +119,12 @@ export default function CertificateView() {
           </div>
         </div>
 
-        {/* Certificate (captured by PDF) */}
         <div
           ref={certificateRef}
           className="bg-white rounded-xl shadow-2xl overflow-hidden border-8 border-double border-[#ED8936]"
         >
           <div className="bg-gradient-to-br from-[#1A365D] to-[#2C4A7C] p-8 text-center text-white">
-            <div className="text-6xl mb-3">??</div>
+            <div className="text-6xl mb-3">[ATOM]</div>
             <h1 className="text-3xl font-bold">Quantum Center of Intellect</h1>
             <p className="text-sm opacity-80 mt-2 tracking-widest uppercase">
               Certificate of Achievement
