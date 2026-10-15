@@ -26,3 +26,65 @@ export const verifyPayment = async (verifyData) => {
   if (!res.ok) throw new Error(data.error || 'Failed to verify payment');
   return data;
 };
+
+
+// ???????????????????????????????????????????????????????????
+// LEGACY HELPERS ? Used by Payments.jsx and PaymentHistory.jsx
+// ???????????????????????????????????????????????????????????
+
+// Record a manual payment (used by /payments form)
+export const recordPayment = async (amount, currency, planName, method, status, reference) => {
+  const { supabase } = await import('../supabaseClient');
+  const { data: { session } } = await supabase.auth.getSession();
+  const email = session?.user?.email;
+  if (!email) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('payments')
+    .insert({
+      user_id: email,
+      amount: Number(amount) || 0,
+      currency: currency || 'ETB',
+      plan_name: planName || 'Custom',
+      method: method || 'manual',
+      status: status || 'pending',
+      reference: reference || null,
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return { data: { success: true, payment: data } };
+};
+
+// Get all payments for current user
+export const getMyPayments = async () => {
+  const { supabase } = await import('../supabaseClient');
+  const { data: { session } } = await supabase.auth.getSession();
+  const email = session?.user?.email;
+  if (!email) return { data: { success: true, payments: [] } };
+
+  const { data, error } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('user_id', email)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return { data: { success: true, payments: data || [] } };
+};
+
+// Update payment status
+export const updatePaymentStatus = async (paymentId, status) => {
+  const { supabase } = await import('../supabaseClient');
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', paymentId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return { data: { success: true, payment: data } };
+};
