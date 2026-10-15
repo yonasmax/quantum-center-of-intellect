@@ -30,3 +30,7 @@ setup.txt
 setup-roles.ps1
 .env.setup
 setup-output.txt
+
+fix-env-vars.ps1
+*.ps1
+!keep-*.ps1
