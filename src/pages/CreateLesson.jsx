@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { saveLesson } from '../services/lessonsAPI';
+import ContentBlockEditor from '../components/ContentBlockEditor';
 
 const SUBJECTS = ['Chemistry', 'Physics', 'Biology', 'Math', 'English', 'History', 'Geography'];
 const GRADES = ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
@@ -24,6 +25,7 @@ export default function CreateLesson() {
     is_published: false,
   });
 
+  const [contentBlocks, setContentBlocks] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -61,7 +63,7 @@ export default function CreateLesson() {
         duration: Number(formData.duration) || 45,
         objectives,
         competence: formData.competence.trim(),
-        content_blocks: [], // will be filled in Step 4
+        content_blocks: contentBlocks,
         cover_image_url: formData.cover_image_url.trim() || null,
         video_url: formData.video_url.trim() || null,
         takeaways,
@@ -201,6 +203,17 @@ export default function CreateLesson() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none"
               />
             </div>
+          </div>
+
+          {/* CONTENT BLOCKS */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <div>
+              <h2 className="font-bold text-[#1A365D] text-lg">Lesson Content</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Build your lesson from blocks ? headings, paragraphs, callouts, images, formulas, and quizzes.
+              </p>
+            </div>
+            <ContentBlockEditor blocks={contentBlocks} onChange={setContentBlocks} />
           </div>
 
           {/* MEDIA */}
