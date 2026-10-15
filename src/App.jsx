@@ -5,34 +5,25 @@ import { ProfileProvider } from './context/ProfileContext';
 import { ProgressProvider } from './context/ProgressContext';
 import { AchievementsProvider } from './context/AchievementsContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import Sidebar from './components/Sidebar';
 
-// Public pages
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-
-// Content
 import CourseCatalog from './pages/CourseCatalog';
 import LessonRenderer from './pages/LessonRenderer';
-
-// Student features
+import StudentLessonViewer from './pages/StudentLessonViewer';
 import Progress from './pages/Progress';
 import Certificates from './pages/Certificates';
 import CertificateView from './pages/CertificateView';
 import Leaderboard from './pages/Leaderboard';
-
-// Payments
 import Pricing from './pages/Pricing';
 import Payments from './pages/Payments';
 import PaymentHistory from './pages/PaymentHistory';
 import Subscriptions from './pages/Subscriptions';
-
-// Admin
 import AdminDashboard from './pages/AdminDashboard';
-
-// Teacher
 import TeacherDashboard from './pages/TeacherDashboard';
 import TeacherAnalytics from './pages/TeacherAnalytics';
 import TeacherStudents from './pages/TeacherStudents';
@@ -43,7 +34,6 @@ import ImportLessons from './pages/ImportLessons';
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public */}
       <Route path="/" element={<Home />} />
       <Route path="/dashboard" element={<Home />} />
       <Route path="/login" element={<Login />} />
@@ -51,90 +41,36 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/pricing" element={<Pricing />} />
-
-      {/* Content */}
       <Route path="/catalog" element={<CourseCatalog />} />
       <Route path="/lesson/:lessonId" element={<LessonRenderer />} />
-
-      {/* Student features */}
+      <Route path="/lesson-view/:lessonId" element={<StudentLessonViewer />} />
       <Route path="/progress" element={<Progress />} />
       <Route path="/certificates" element={<Certificates />} />
       <Route path="/certificates/:certificateId" element={<CertificateView />} />
       <Route path="/leaderboard" element={<Leaderboard />} />
-
-      {/* Payments */}
       <Route path="/payments" element={<Payments />} />
       <Route path="/payments/history" element={<PaymentHistory />} />
       <Route path="/subscriptions" element={<Subscriptions />} />
-
-      {/* Admin ? requires admin role */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute requireRole="admin">
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Teacher ? requires teacher role */}
-      <Route
-        path="/teacher"
-        element={
-          <ProtectedRoute requireRole="teacher">
-            <TeacherDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teacher/analytics"
-        element={
-          <ProtectedRoute requireRole="teacher">
-            <TeacherAnalytics />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teacher/students"
-        element={
-          <ProtectedRoute requireRole="teacher">
-            <TeacherStudents />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teacher/students/:studentId"
-        element={
-          <ProtectedRoute requireRole="teacher">
-            <TeacherStudentDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teacher/create"
-        element={
-          <ProtectedRoute requireRole="teacher">
-            <CreateLesson />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teacher/edit/:lessonId"
-        element={
-          <ProtectedRoute requireRole="teacher">
-            <CreateLesson />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teacher/import"
-        element={
-          <ProtectedRoute requireRole="teacher">
-            <ImportLessons />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/admin" element={<ProtectedRoute requireRole="admin"><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/teacher" element={<ProtectedRoute requireRole="teacher"><TeacherDashboard /></ProtectedRoute>} />
+      <Route path="/teacher/analytics" element={<ProtectedRoute requireRole="teacher"><TeacherAnalytics /></ProtectedRoute>} />
+      <Route path="/teacher/students" element={<ProtectedRoute requireRole="teacher"><TeacherStudents /></ProtectedRoute>} />
+      <Route path="/teacher/students/:studentId" element={<ProtectedRoute requireRole="teacher"><TeacherStudentDetail /></ProtectedRoute>} />
+      <Route path="/teacher/create" element={<ProtectedRoute requireRole="teacher"><CreateLesson /></ProtectedRoute>} />
+      <Route path="/teacher/edit/:lessonId" element={<ProtectedRoute requireRole="teacher"><CreateLesson /></ProtectedRoute>} />
+      <Route path="/teacher/import" element={<ProtectedRoute requireRole="teacher"><ImportLessons /></ProtectedRoute>} />
     </Routes>
+  );
+}
+
+function AppLayout() {
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 min-w-0">
+        <AppRoutes />
+      </div>
+    </div>
   );
 }
 
@@ -145,7 +81,7 @@ function App() {
         <ProfileProvider>
           <ProgressProvider>
             <AchievementsProvider>
-              <AppRoutes />
+              <AppLayout />
             </AchievementsProvider>
           </ProgressProvider>
         </ProfileProvider>
