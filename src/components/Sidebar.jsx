@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
@@ -21,17 +21,54 @@ const ICONS = {
   logout: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1',
   pricing: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
   card: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
+  support: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
+  chevron: 'M19 9l-7 7-7-7',
 };
 
-function NavLink({ to, icon, label, isActive }) {
+// ???????????????????????????????????????????????????????????
+// Role-based color config
+// ???????????????????????????????????????????????????????????
+const ROLE_STYLES = {
+  student: {
+    accent: '#3182CE',
+    accentHover: '#2C5282',
+    accentBg: 'rgba(49, 130, 206, 0.15)',
+    label: 'Student',
+    icon: '??',
+  },
+  teacher: {
+    accent: '#38A169',
+    accentHover: '#276749',
+    accentBg: 'rgba(56, 161, 105, 0.15)',
+    label: 'Teacher',
+    icon: '??',
+  },
+  admin: {
+    accent: '#ED8936',
+    accentHover: '#C05621',
+    accentBg: 'rgba(237, 137, 54, 0.15)',
+    label: 'Admin',
+    icon: '??',
+  },
+  guest: {
+    accent: '#718096',
+    accentHover: '#4A5568',
+    accentBg: 'rgba(113, 128, 150, 0.15)',
+    label: 'Guest',
+    icon: '??',
+  },
+};
+
+function NavLink({ to, icon, label, isActive, accent }) {
   return (
     <Link
       to={to}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-medium ${
         isActive
-          ? 'bg-[#ED8936] text-white'
+          ? 'text-white shadow-sm'
           : 'text-gray-300 hover:bg-white/10 hover:text-white'
       }`}
+      style={isActive ? { backgroundColor: accent } : {}}
     >
       <Icon path={icon} />
       <span>{label}</span>
@@ -39,13 +76,45 @@ function NavLink({ to, icon, label, isActive }) {
   );
 }
 
+function CollapsibleSection({ title, children, defaultOpen = true, accent }) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="pt-4">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-1 mb-1 group"
+      >
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider group-hover:text-gray-300 transition-colors">
+          {title}
+        </p>
+        <svg
+          className={`w-3 h-3 text-gray-500 transition-transform ${open ? '' : '-rotate-90'}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={ICONS.chevron} />
+        </svg>
+      </button>
+      {open && <div className="space-y-1">{children}</div>}
+    </div>
+  );
+}
+
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
-  const { role, isAdmin, isTeacher } = useProfile();
+  const { role } = useProfile();
 
   if (!isAuthenticated) return null;
+
+  const roleStyle = ROLE_STYLES[role] || ROLE_STYLES.guest;
+  const accent = roleStyle.accent;
+  const isAdmin = role === 'admin';
+  const isTeacher = role === 'teacher';
 
   const path = location.pathname;
   const is = (p) => path === p || (p !== '/dashboard' && path.startsWith(p));
@@ -57,64 +126,70 @@ export default function Sidebar() {
 
   const displayName = user?.fullName || user?.email || 'User';
   const initial = displayName.charAt(0).toUpperCase();
-  const roleBadge = role === 'admin' ? 'Admin' : role === 'teacher' ? 'Teacher' : 'Student';
 
   return (
     <aside className="w-64 bg-[#0F1E3A] min-h-screen flex flex-col flex-shrink-0 hidden md:flex">
       {/* Logo */}
       <div className="p-5 border-b border-white/10">
         <Link to="/dashboard" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#ED8936] rounded-lg flex items-center justify-center text-white text-xl font-bold">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xl font-bold"
+            style={{ backgroundColor: accent }}
+          >
             Q
           </div>
           <div>
             <p className="text-white font-bold text-sm leading-tight">Quantum Center</p>
-            <p className="text-[#ED8936] text-xs">of Intellect</p>
+            <p className="text-xs" style={{ color: accent }}>of Intellect</p>
           </div>
         </Link>
       </div>
 
-      {/* User info */}
+      {/* User info ? role-colored */}
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#1A365D] rounded-full flex items-center justify-center text-white font-bold">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold relative"
+            style={{ backgroundColor: accent }}
+          >
             {initial}
+            <span className="absolute -bottom-1 -right-1 text-xs">{roleStyle.icon}</span>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-white text-sm font-bold truncate">{displayName}</p>
-            <p className="text-[#ED8936] text-xs font-bold uppercase">{roleBadge}</p>
+            <span
+              className="inline-block text-xs font-bold uppercase px-2 py-0.5 rounded-full mt-0.5"
+              style={{ backgroundColor: roleStyle.accentBg, color: accent }}
+            >
+              {roleStyle.label}
+            </span>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        <NavLink to="/dashboard" icon={ICONS.home} label="Home" isActive={is('/dashboard')} />
-        <NavLink to="/catalog" icon={ICONS.book} label="Browse Lessons" isActive={is('/catalog')} />
-        <NavLink to="/progress" icon={ICONS.chart} label="My Progress" isActive={is('/progress')} />
-        <NavLink to="/certificates" icon={ICONS.award} label="Certificates" isActive={is('/certificates')} />
-        <NavLink to="/leaderboard" icon={ICONS.trophy} label="Leaderboard" isActive={is('/leaderboard')} />
-        <NavLink to="/pricing" icon={ICONS.pricing} label="Upgrade" isActive={is('/pricing')} />
-        <NavLink to="/subscriptions" icon={ICONS.card} label="My Subscription" isActive={is('/subscriptions')} />
+        <NavLink to="/dashboard" icon={ICONS.home} label="Home" isActive={is('/dashboard')} accent={accent} />
+        <NavLink to="/catalog" icon={ICONS.book} label="Browse Lessons" isActive={is('/catalog')} accent={accent} />
+        <NavLink to="/progress" icon={ICONS.chart} label="My Progress" isActive={is('/progress')} accent={accent} />
+        <NavLink to="/certificates" icon={ICONS.award} label="Certificates" isActive={is('/certificates')} accent={accent} />
+        <NavLink to="/leaderboard" icon={ICONS.trophy} label="Leaderboard" isActive={is('/leaderboard')} accent={accent} />
+        <NavLink to="/pricing" icon={ICONS.pricing} label="Upgrade" isActive={is('/pricing')} accent={accent} />
+        <NavLink to="/subscriptions" icon={ICONS.card} label="My Subscription" isActive={is('/subscriptions')} accent={accent} />
+        <NavLink to="/support" icon={ICONS.support} label="Support Us" isActive={is('/support')} accent={accent} />
 
         {(isTeacher || isAdmin) && (
-          <>
-            <div className="pt-4 pb-1 px-3">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Teaching</p>
-            </div>
-            <NavLink to="/teacher" icon={ICONS.chart} label="Teacher Dashboard" isActive={path === '/teacher'} />
-            <NavLink to="/teacher/create" icon={ICONS.plus} label="Create Lesson" isActive={is('/teacher/create')} />
-            <NavLink to="/teacher/students" icon={ICONS.users} label="My Students" isActive={is('/teacher/students')} />
-          </>
+          <CollapsibleSection title="Teaching" accent={accent}>
+            <NavLink to="/teacher" icon={ICONS.chart} label="Teacher Dashboard" isActive={path === '/teacher'} accent={accent} />
+            <NavLink to="/teacher/create" icon={ICONS.plus} label="Create Lesson" isActive={is('/teacher/create')} accent={accent} />
+            <NavLink to="/teacher/students" icon={ICONS.users} label="My Students" isActive={is('/teacher/students')} accent={accent} />
+          </CollapsibleSection>
         )}
 
         {isAdmin && (
-          <>
-            <div className="pt-4 pb-1 px-3">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Admin</p>
-            </div>
-            <NavLink to="/admin" icon={ICONS.cog} label="Admin Panel" isActive={is('/admin')} />
-          </>
+          <CollapsibleSection title="Admin" accent={accent}>
+            <NavLink to="/admin" icon={ICONS.cog} label="Admin Panel" isActive={is('/admin')} accent={accent} />
+          </CollapsibleSection>
         )}
       </nav>
 
