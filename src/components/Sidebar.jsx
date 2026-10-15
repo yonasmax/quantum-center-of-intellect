@@ -58,7 +58,7 @@ export default function Sidebar() {
   const roleBadge = role === 'admin' ? 'Admin' : role === 'teacher' ? 'Teacher' : 'Student';
 
   return (
-    <aside className="w-64 bg-[#0F1E3A] min-h-screen flex flex-col flex-shrink-0 hidden md:flex">
+    <aside className="w-64 bg-[#0F1E3A] min-h-screen border-r-4 border-red-500 flex flex-col flex-shrink-0 flex">
       {/* Logo */}
       <div className="p-5 border-b border-white/10">
         <Link to="/dashboard" className="flex items-center gap-3">
@@ -127,3 +127,5 @@ export default function Sidebar() {
     </aside>
   );
 }
+
+
