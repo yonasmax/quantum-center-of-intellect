@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Lottie from 'lottie-react';
-const LottiePlayer = Lottie.default || Lottie;
 
 const CALLOUT_STYLES = {
   info: { bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-900', icon: 'i' },
@@ -99,7 +98,7 @@ function AnimationBlock({ block }) {
           <p className="text-sm text-red-500">{error}</p>
         ) : animationData ? (
           <div className="w-full max-w-md">
-            <LottiePlayer
+            <Lottie
               animationData={animationData}
               loop={block.loop !== false}
               autoplay={block.autoplay !== false}
@@ -201,4 +200,6 @@ export default function LessonBlockRenderer({ blocks }) {
     </div>
   );
 }
+
+
 
