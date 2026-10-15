@@ -22,6 +22,7 @@ import Leaderboard from './pages/Leaderboard';
 import Pricing from './pages/Pricing';
 import Payments from './pages/Payments';
 import PaymentSuccess from './pages/PaymentSuccess';
+import Support from './pages/Support';
 import PaymentHistory from './pages/PaymentHistory';
 import Subscriptions from './pages/Subscriptions';
 import AdminDashboard from './pages/AdminDashboard';
@@ -92,4 +93,5 @@ function App() {
 }
 
 export default App;
+
 
