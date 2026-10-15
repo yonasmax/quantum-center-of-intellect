@@ -15,20 +15,34 @@ export default function CertificateView() {
   const [downloading, setDownloading] = useState(false);
 
   const certificate = useMemo(() => {
-    const subject = certificateId?.split('-')[0];
-    if (!subject) return null;
+    if (!certificateId) return null;
 
-    const lessons = Object.values(progressMap).filter(
-      (p) => p.completed && p.lesson?.subject?.toLowerCase() === subject
-    );
+    // certificateId format: "cert-chemistry-abc123" OR "cert-chemistry-anon"
+    // parts: ["cert", "chemistry", "abc123"]
+    const parts = certificateId.split('-');
+    const rawSubject = parts.length >= 2 ? parts[1] : parts[0];
+    const uniqueId = parts.length >= 3 ? parts.slice(2).join('-') : parts[parts.length - 1];
+
+    // Find lessons with matching subject (case-insensitive)
+    const lessons = Object.values(progressMap).filter((p) => {
+      if (!p.completed || !p.lesson?.subject) return false;
+      return p.lesson.subject.toLowerCase() === rawSubject.toLowerCase();
+    });
+
+    // Use the actual subject casing from lessons if found, else capitalize
+    const displaySubject = lessons[0]?.lesson?.subject
+      || rawSubject.charAt(0).toUpperCase() + rawSubject.slice(1);
+
+    // Human-readable verification code
+    const verificationCode = `${rawSubject.toUpperCase()}-${uniqueId.toUpperCase()}`;
 
     return {
       id: certificateId,
-      subject: lessons[0]?.lesson?.subject || subject,
+      subject: displaySubject,
       lessonsCompleted: lessons.length,
-      studentName: user?.fullName || 'Student',
+      studentName: user?.fullName || user?.email || 'Student',
       issuedAt: new Date().toISOString(),
-      verificationCode: certificateId?.toUpperCase().slice(0, 12),
+      verificationCode,
     };
   }, [certificateId, progressMap, user]);
 
@@ -41,7 +55,6 @@ export default function CertificateView() {
     if (!certificateRef.current) return;
     setDownloading(true);
     try {
-      // Capture the certificate element at 2x scale for high resolution
       const canvas = await html2canvas(certificateRef.current, {
         scale: 2,
         backgroundColor: '#ffffff',
@@ -51,7 +64,6 @@ export default function CertificateView() {
 
       const imgData = canvas.toDataURL('image/png');
 
-      // A4 landscape PDF
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -61,7 +73,6 @@ export default function CertificateView() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      // Fit image to PDF with small margin
       const margin = 8;
       const availableWidth = pdfWidth - margin * 2;
       const availableHeight = pdfHeight - margin * 2;
