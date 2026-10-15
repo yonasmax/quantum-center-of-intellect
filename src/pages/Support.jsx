@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { initPayment } from '../services/paymentsAPI';
 import { recordDonation } from '../services/donationsAPI';
-import SponsorCarousel from '../components/SponsorCarousel';
+// import SponsorCarousel from '../components/SponsorCarousel';
 
 const TIERS = [
   { amount: 50, label: 'Supporter', description: 'Covers one lesson for one student' },
@@ -111,7 +111,7 @@ export default function Support() {
         </div>
 
         {/* Sponsor block */}
-        <SponsorCarousel variant="banner" />
+        {/* SponsorCarousel disabled for now */}
 
         {/* Donation tiers */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -230,3 +230,4 @@ export default function Support() {
     </div>
   );
 }
+
