@@ -32,24 +32,33 @@ const PLANS = [
 ];
 
 export default function Pricing() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(null);
-  const [showPhoneModal, setShowPhoneModal] = useState(null);  // plan object
+  const [loadingBtn, setLoadingBtn] = useState(null);
+  const [showPhoneModal, setShowPhoneModal] = useState(null);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
+
+  // WAIT for auth to finish loading before deciding
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
+        <p className="text-[#1A365D] font-bold">Loading...</p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
   const handleFree = async () => {
-    setLoading('free');
+    setLoadingBtn('free');
     try {
       await setSubscription('free', 'Free', 0, 'forever');
       navigate('/dashboard');
     } catch (err) {
       alert('Failed: ' + err.message);
     }
-    setLoading(null);
+    setLoadingBtn(null);
   };
 
   const handleChoosePaidPlan = (plan) => {
@@ -61,22 +70,17 @@ export default function Pricing() {
   const handleStartPayment = async () => {
     setError('');
 
-    // Validate phone
     const cleanPhone = phone.replace(/\s+/g, '').replace(/\D/g, '');
     if (cleanPhone.length < 9) {
-      return setError('Enter a valid Telebirr phone number (e.g., 0912345678 or 251912345678)');
+      return setError('Enter a valid Telebirr phone number (e.g., 0912345678)');
     }
 
-    // Normalize: if starts with 0, replace with 251 (Ethiopia country code)
     let normalized = cleanPhone;
-    if (normalized.startsWith('0')) {
-      normalized = '251' + normalized.slice(1);
-    } else if (!normalized.startsWith('251')) {
-      normalized = '251' + normalized;
-    }
+    if (normalized.startsWith('0')) normalized = '251' + normalized.slice(1);
+    else if (!normalized.startsWith('251')) normalized = '251' + normalized;
 
     const plan = showPhoneModal;
-    setLoading(plan.id);
+    setLoadingBtn(plan.id);
 
     try {
       const result = await initPayment({
@@ -89,7 +93,6 @@ export default function Pricing() {
         planName: plan.name + ' Plan',
       });
 
-      // Save tx_ref + plan info to localStorage so /payment-success can verify
       localStorage.setItem('pending_payment', JSON.stringify({
         tx_ref: result.tx_ref,
         planId: plan.id,
@@ -98,7 +101,6 @@ export default function Pricing() {
         amount: plan.price,
       }));
 
-      // Redirect to Chapa checkout
       if (result.checkout_url) {
         window.location.href = result.checkout_url;
       } else {
@@ -107,16 +109,13 @@ export default function Pricing() {
     } catch (err) {
       console.error('[pricing] Payment init failed:', err);
       setError(err.message || 'Failed to start payment. Try again.');
-      setLoading(null);
+      setLoadingBtn(null);
     }
   };
 
   const handleChoose = (plan) => {
-    if (plan.id === 'free') {
-      handleFree();
-    } else {
-      handleChoosePaidPlan(plan);
-    }
+    if (plan.id === 'free') handleFree();
+    else handleChoosePaidPlan(plan);
   };
 
   return (
@@ -155,18 +154,18 @@ export default function Pricing() {
               </ul>
               <button
                 onClick={() => handleChoose(plan)}
-                disabled={loading === plan.id}
+                disabled={loadingBtn === plan.id}
                 className={`w-full py-3 rounded-lg font-bold transition-all ${
                   plan.highlight
                     ? 'bg-[#ED8936] hover:bg-orange-500 text-white'
                     : 'bg-[#1A365D] hover:bg-blue-900 text-white'
                 } disabled:opacity-50`}
               >
-                {loading === plan.id
+                {loadingBtn === plan.id
                   ? 'Processing...'
                   : plan.id === 'free'
                   ? 'Start Free'
-                  : `Pay with Telebirr`}
+                  : 'Pay with Telebirr'}
               </button>
             </div>
           ))}
@@ -179,7 +178,6 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* Phone modal for paid plans */}
       {showPhoneModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
@@ -193,10 +191,8 @@ export default function Pricing() {
               <button
                 onClick={() => setShowPhoneModal(null)}
                 className="text-gray-400 hover:text-gray-600 text-2xl"
-                disabled={loading === showPhoneModal.id}
-              >
-                ?
-              </button>
+                disabled={loadingBtn === showPhoneModal.id}
+              >?</button>
             </div>
 
             {error && (
@@ -215,20 +211,17 @@ export default function Pricing() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="0912345678 or 251912345678"
-                  disabled={loading === showPhoneModal.id}
+                  disabled={loadingBtn === showPhoneModal.id}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ED8936] outline-none text-lg"
                   autoFocus
                 />
-                <p className="text-xs text-gray-500 mt-2">
-                  We'll send a payment request to this number via Telebirr.
-                </p>
               </div>
 
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-xs text-orange-800">
                 <p className="font-bold mb-1">How it works:</p>
                 <ol className="list-decimal list-inside space-y-1">
-                  <li>Click "Continue" ? you're redirected to Chapa</li>
-                  <li>Enter your Telebirr PIN to approve the payment</li>
+                  <li>Click "Continue" ? redirected to Chapa</li>
+                  <li>Enter your Telebirr PIN to approve</li>
                   <li>You'll be redirected back once payment succeeds</li>
                 </ol>
               </div>
@@ -236,17 +229,17 @@ export default function Pricing() {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowPhoneModal(null)}
-                  disabled={loading === showPhoneModal.id}
+                  disabled={loadingBtn === showPhoneModal.id}
                   className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg font-bold disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleStartPayment}
-                  disabled={loading === showPhoneModal.id || !phone.trim()}
+                  disabled={loadingBtn === showPhoneModal.id || !phone.trim()}
                   className="flex-1 bg-[#ED8936] hover:bg-orange-500 text-white py-3 rounded-lg font-bold disabled:opacity-50"
                 >
-                  {loading === showPhoneModal.id ? 'Redirecting...' : 'Continue to Pay'}
+                  {loadingBtn === showPhoneModal.id ? 'Redirecting...' : 'Continue to Pay'}
                 </button>
               </div>
             </div>
