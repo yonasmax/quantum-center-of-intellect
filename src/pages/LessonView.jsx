@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../supabaseClient'; // Fetch directly from Supabase
+import { supabase } from '../supabaseClient';
 
 export default function LessonView() {
   const { lessonId } = useParams();
@@ -11,17 +11,15 @@ export default function LessonView() {
   useEffect(() => {
     (async () => {
       try {
-        // Fetch DIRECTLY from Supabase to bypass any API bugs
         const { data, error: dbError } = await supabase
           .from('lessons')
           .select('*')
-          .eq('lesson_id', lessonId)
-          .single();
+          .eq('lesson_id', lessonId);
 
         if (dbError) throw dbError;
         
-        if (data) {
-          setLesson(data);
+        if (data && data.length > 0) {
+          setLesson(data[0]);
         } else {
           setError('Lesson not found in database.');
         }
@@ -32,10 +30,8 @@ export default function LessonView() {
     })();
   }, [lessonId]);
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]"><p className="text-[#1A365D] font-bold text-lg animate-pulse">Loading lesson...</p></div>;
-  }
-
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]"><p className="text-[#1A365D] font-bold text-lg animate-pulse">Loading lesson...</p></div>;
+  
   if (error || !lesson) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
@@ -48,7 +44,6 @@ export default function LessonView() {
   }
 
   let blocks = lesson.content_blocks || lesson.contentBlocks || lesson.blocks || [];
-  
   if (typeof blocks === 'string') {
     try { blocks = JSON.parse(blocks); } catch (e) { blocks = []; }
   }
@@ -67,7 +62,6 @@ export default function LessonView() {
             </Link>
           </div>
           <h1 className="text-3xl font-bold">{lesson.title}</h1>
-          <p className="text-sm opacity-80 mt-2">Duration: {lesson.duration || 45} min</p>
         </div>
       </header>
 
