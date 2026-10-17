@@ -39,7 +39,7 @@ export const getLesson = async (id) => {
   if (error) throw error;
   if (!data || data.length === 0) throw new Error('Lesson not found');
   
-  // FIX: Force it to return the first object, not the array
+  // THE FIX: Return a single object, not an array
   return { data: { lesson: data[0] } }; 
 };
 
