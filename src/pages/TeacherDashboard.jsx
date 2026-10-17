@@ -16,6 +16,16 @@ export default function TeacherDashboard() {
   const [students, setStudents] = useState([]);
   const [progressMap, setProgressMap] = useState({});
   const [lessons, setLessons] = useState([]);
+
+  const handleSeedLesson = async () => {
+    try {
+      await seedDecompositionLesson();
+      alert('✅ Lesson injected! Refreshing...');
+      window.location.reload();
+    } catch (e) {
+      alert('❌ ' + e.message);
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [busyLessonId, setBusyLessonId] = useState(null);
 
@@ -152,7 +162,10 @@ export default function TeacherDashboard() {
 >
   🚀 Inject Test Lesson
 </button>
-<h2 className="font-bold text-[#1A365D]">My Lessons ({lessons.length})</h2>
+<button onClick={handleSeedLesson} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold mb-4">
+        🚀 Inject Perfect Lesson
+      </button>
+      <h2 className="font-bold text-[#1A365D]">My Lessons ({lessons.length})</h2>
               <p className="text-xs text-gray-500 mt-1">
                 Lessons you've authored. Publish to make them visible to students.
               </p>
@@ -270,4 +283,5 @@ export default function TeacherDashboard() {
     </div>
   );
 }
+
 
