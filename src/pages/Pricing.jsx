@@ -58,6 +58,25 @@ export default function Pricing() {
             </button>
           </div>
 
+                  {/* School Exam Card */}
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 md:col-span-2 mt-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div>
+                <h2 className="text-2xl font-bold text-[#1A365D] mb-2">For Schools: Online Model Exams</h2>
+                <p className="text-sm text-gray-500 mb-4">Fully invigilated, auto-graded exams with instant CSV results.</p>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex gap-2"><span className="text-green-500">✓</span> <strong>Anti-cheat:</strong> Laptop locks automatically if the student tries to switch tabs/apps.</li>
+                  <li className="flex gap-2"><span className="text-green-500">✓</span> <strong>Auto-grading:</strong> Scores and analytics generated instantly.</li>
+                  <li className="flex gap-2"><span className="text-green-500">✓</span> <strong>CSV Export:</strong> Download a full result sheet for each school.</li>
+                </ul>
+              </div>
+              <div className="text-center bg-blue-50 p-6 rounded-xl border border-blue-100 min-w-[200px]">
+                <p className="text-sm text-blue-800 font-bold mb-1">Only</p>
+                <p className="text-4xl font-bold text-[#1A365D] mb-1">5 ETB</p>
+                <p className="text-xs text-gray-500 font-bold">per student / per exam</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Free Beta Banner */}
@@ -80,3 +99,4 @@ export default function Pricing() {
     </div>
   );
 }
+

@@ -1,4 +1,5 @@
-import React from 'react';
+﻿import React from 'react';
+import ExamRoom from './pages/ExamRoom';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProfileProvider } from './context/ProfileContext';
@@ -98,6 +99,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
