@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
+import { seedDecompositionLesson } from '../utils/seedLesson';
 import { Link, Navigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
 import {
@@ -137,7 +138,21 @@ export default function TeacherDashboard() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-5 border-b border-gray-100 flex justify-between items-center">
             <div>
-              <h2 className="font-bold text-[#1A365D]">My Lessons ({lessons.length})</h2>
+              <button 
+  onClick={async () => {
+    try {
+      await seedDecompositionLesson();
+      alert('✅ Lesson inserted successfully! Refreshing...');
+      window.location.reload();
+    } catch (err) {
+      alert('❌ Error: ' + err.message);
+    }
+  }}
+  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold text-sm mb-4"
+>
+  🚀 Inject Test Lesson
+</button>
+<h2 className="font-bold text-[#1A365D]">My Lessons ({lessons.length})</h2>
               <p className="text-xs text-gray-500 mt-1">
                 Lessons you've authored. Publish to make them visible to students.
               </p>
@@ -255,3 +270,4 @@ export default function TeacherDashboard() {
     </div>
   );
 }
+
