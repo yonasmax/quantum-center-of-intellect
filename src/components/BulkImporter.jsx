@@ -10,9 +10,7 @@ export default function BulkImporter() {
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file || !file.name.endsWith('.docx')) {
-      return setError('Please upload a .docx file');
-    }
+    if (!file || !file.name.endsWith('.docx')) return setError('Please upload a .docx file');
 
     setLoading(true);
     setError('');
@@ -24,44 +22,42 @@ export default function BulkImporter() {
       const result = await mammoth.extractRawText({ arrayBuffer });
       const text = result.value;
 
-      // Split the raw text by "COVER IMAGE:"
-      const lessonsRaw = text.split(/COVER IMAGE:/i).filter(chunk => chunk.trim().length > 0);
+      // Split the document by the literal string "COVER IMAGE:"
+      const chunks = text.split(/COVER IMAGE:/i).filter(c => c.trim().length > 0);
       const lessonsData = [];
 
-      for (let i = 0; i < lessonsRaw.length; i++) {
-        let chunk = lessonsRaw[i].trim();
+      for (let chunk of chunks) {
+        chunk = chunk.trim();
         
-        // Extract URLs
-        const urlMatches = chunk.match(/https?:\/\/[^\s]+/g) || [];
-        const coverImage = urlMatches.find(u => u.includes('images.unsplash')) || null;
-        const videoUrl = urlMatches.find(u => u.includes('youtube')) || null;
+        // 1. Get Cover Image
+        const coverMatch = chunk.match(/^\s*(https?:\/\/[^\s]+)/i);
+        const coverImage = coverMatch ? coverMatch[1] : null;
+        if (coverMatch) chunk = chunk.replace(coverMatch[0], '');
 
-        // Remove the URLs from the text so they don't become blocks
-        chunk = chunk.replace(/https?:\/\/[^\s]+/g, '');
-        // Remove the text "VIDEO URL:" and "COVER IMAGE:"
-        chunk = chunk.replace(/VIDEO URL:/gi, '').replace(/COVER IMAGE:/gi, '');
+        // 2. Get Video URL
+        const videoMatch = chunk.match(/VIDEO URL:\s*(https?:\/\/[^\s]+)/i);
+        const videoUrl = videoMatch ? videoMatch[1] : null;
+        if (videoMatch) chunk = chunk.replace(videoMatch[0], '');
 
+        // 3. Extract Title (first non-empty line)
         const lines = chunk.split('\n').map(l => l.trim()).filter(Boolean);
         let title = "Untitled Lesson";
-        let blocks = [];
+        if (lines.length > 0) {
+          title = lines.shift(); // Take the first line as title
+        }
 
+        let blocks = [];
         for (let j = 0; j < lines.length; j++) {
           let line = lines[j];
 
-          // The first line is usually the title, check if it's not a quiz/formula
-          if (j === 0 && !line.includes('[FORMULA]') && !line.match(/^Q\.\d+/)) {
-            title = line;
-            continue;
-          }
-
-          // FORMULA
+          // Formula
           if (line.includes('[FORMULA]')) {
             const match = line.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
             if (match) blocks.push({ type: 'formula', content: match[1].trim() });
             continue;
           }
 
-          // QUIZZES (Q.1, Q.2, etc)
+          // Quizzes
           if (line.match(/^Q\.\d+/)) {
             let qText = line.replace(/^Q\.\d+:?\s*/, '');
             let options = [];
@@ -71,40 +67,34 @@ export default function BulkImporter() {
             let k = j + 1;
             while (k < lines.length && !lines[k].match(/^Q\.\d+/)) {
               let next = lines[k];
-              if (/^[A-D]\)/.test(next)) {
-                options.push(next.replace(/^[A-D]\)\s*/, ''));
-              } else if (next.startsWith('Answer:')) {
+              if (/^[A-D]\)/.test(next)) options.push(next.replace(/^[A-D]\)\s*/, ''));
+              else if (next.startsWith('Answer:')) {
                 const l = next.replace('Answer:', '').trim().toUpperCase();
                 answer = l === 'A' ? 0 : l === 'B' ? 1 : l === 'C' ? 2 : 3;
-              } else if (next.toLowerCase().startsWith('description:')) {
-                desc = next.replace(/description:/i, '').trim();
               }
+              else if (next.toLowerCase().startsWith('description:')) desc = next.replace(/description:/i, '').trim();
               k++;
             }
 
-            if (options.length > 0) {
-              blocks.push({ type: 'quiz', question: qText, options, correctAnswer: answer, explanation: desc });
-            }
+            if (options.length > 0) blocks.push({ type: 'quiz', question: qText, options, correctAnswer: answer, explanation: desc });
             j = k - 1;
             continue;
           }
 
-          // CALLOUTS (Text starting with >)
+          // Callouts
           if (line.startsWith('>')) {
             blocks.push({ type: 'callout', content: line.replace(/^>\s*/, '').trim() });
             continue;
           }
 
-          // HEADINGS (If line is short, doesn't end with a period, and isn't an answer)
-          if (line.length < 60 && !line.endsWith('.') && !line.includes('Answer:') && !line.includes('Description:')) {
+          // Headings (Shorter lines without periods)
+          if (line.length < 60 && !line.endsWith('.') && !line.includes('Answer:')) {
             blocks.push({ type: 'heading', content: line, level: 2 });
             continue;
           }
 
-          // NORMAL TEXT
-          if (line.length > 3) {
-            blocks.push({ type: 'text', content: line });
-          }
+          // Text
+          if (line.length > 3) blocks.push({ type: 'text', content: line });
         }
 
         if (title !== "Untitled Lesson" && blocks.length > 0) {
@@ -112,7 +102,7 @@ export default function BulkImporter() {
         }
       }
 
-      if (lessonsData.length === 0) throw new Error('No valid lessons found. Make sure the format is correct.');
+      if (lessonsData.length === 0) throw new Error('No valid lessons found. Check the document format.');
       setParsedLessons(lessonsData);
     } catch (err) {
       setError('Failed to parse document: ' + err.message);
@@ -141,7 +131,7 @@ export default function BulkImporter() {
         });
         savedCount++;
       }
-      setSuccess(`Successfully saved ${savedCount} lessons to the database!`);
+      setSuccess(`Successfully saved ${savedCount} lessons!`);
       setParsedLessons([]);
     } catch (err) {
       setError(`Failed after saving ${savedCount} lessons: ${err.message}`);
@@ -154,10 +144,7 @@ export default function BulkImporter() {
       <h3 className="font-bold text-[#2B6CB0] text-lg mb-2 flex items-center gap-2">
         <span>🚀</span> Bulk Import (Full Unit)
       </h3>
-      <p className="text-sm text-[#2C5282] mb-4">
-        Upload a Word document. Each <strong>COVER IMAGE</strong> tag will be split into a separate lesson automatically.
-      </p>
-
+      
       {error && <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4 border border-red-200">{error}</div>}
       {success && <div className="bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-4 border border-green-200">{success}</div>}
 
