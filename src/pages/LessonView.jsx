@@ -1,11 +1,9 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getLesson } from '../services/lessonsAPI';
-import { useAuth } from '../context/AuthContext';
 
 export default function LessonView() {
   const { lessonId } = useParams();
-  const { user } = useAuth();
   const [lesson, setLesson] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -20,52 +18,73 @@ export default function LessonView() {
           setError('Lesson not found');
         }
       } catch (err) {
-        setError(err.message);
+        setError(err.message || 'Failed to load lesson');
       }
       setLoading(false);
     })();
   }, [lessonId]);
 
-  // Helper function to render content blocks safely
+  // Helper function to render each block
   const renderBlock = (block, index) => {
     if (!block || !block.type) return null;
     
     switch (block.type) {
       case 'heading':
-        return <h2 key={index} className="text-2xl font-bold text-[#1A365D] mt-8 mb-4">{block.content}</h2>;
+        return <h2 key={index} className="text-2xl font-bold text-[#1A365D] mt-8 mb-4 border-b pb-2">{block.content}</h2>;
+      
       case 'text':
-        return <p key={index} className="text-gray-700 mb-4 leading-relaxed">{block.content}</p>;
+        return <p key={index} className="text-gray-700 mb-4 leading-relaxed text-lg">{block.content}</p>;
+      
       case 'formula':
-        return <div key={index} className="bg-gray-100 p-4 rounded-lg font-mono text-center mb-6 text-lg border border-gray-200">{block.content}</div>;
+        return (
+          <div key={index} className="bg-gray-100 p-4 rounded-lg font-mono text-center mb-6 text-lg border border-gray-200 text-[#1A365D]">
+            {block.content}
+          </div>
+        );
+      
       case 'callout':
-        return <div key={index} className="bg-orange-50 border-l-4 border-[#ED8936] p-5 rounded-r-lg mb-6 text-sm text-gray-800 font-medium">{block.content}</div>;
+        return (
+          <div key={index} className="bg-orange-50 border-l-4 border-[#ED8936] p-5 rounded-r-lg mb-6 text-sm text-gray-800 font-medium">
+            {block.content}
+          </div>
+        );
+      
       case 'quiz':
         return (
           <div key={index} className="bg-blue-50 border border-blue-100 p-6 rounded-xl mb-6 shadow-sm">
-            <p className="font-bold text-[#1A365D] mb-4">{block.question}</p>
+            <p className="font-bold text-[#1A365D] mb-4 text-lg">{block.question}</p>
             <ul className="space-y-2">
               {block.options && block.options.map((opt, i) => (
-                <li key={i} className="text-gray-700 bg-white p-3 rounded-lg border border-gray-200">{String.fromCharCode(65 + i)}) {opt}</li>
+                <li key={i} className="text-gray-700 bg-white p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
+                  <span className="font-bold mr-2">{String.fromCharCode(65 + i)})</span> {opt}
+                </li>
               ))}
             </ul>
-            {block.explanation && <p className="text-xs text-blue-500 mt-4 italic bg-blue-100 p-2 rounded">Explanation: {block.explanation}</p>}
+            {block.explanation && (
+              <p className="text-xs text-blue-600 mt-4 italic bg-blue-100 p-3 rounded">
+                Explanation: {block.explanation}
+              </p>
+            )}
           </div>
         );
+      
       case 'image':
         return <img key={index} src={block.url} alt="Lesson visual" className="w-full rounded-xl shadow-md my-6" />;
+      
       case 'list':
         return (
-          <ul key={index} className="list-disc list-inside text-gray-700 mb-4 space-y-1">
+          <ul key={index} className="list-disc list-inside text-gray-700 mb-4 space-y-2 text-lg">
             {block.items && block.items.map((item, i) => <li key={i}>{item}</li>)}
           </ul>
         );
+      
       default:
         return null;
     }
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]"><p className="text-[#1A365D] font-bold">Loading lesson...</p></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]"><p className="text-[#1A365D] font-bold text-lg">Loading lesson...</p></div>;
   }
 
   if (error || !lesson) {
@@ -82,7 +101,7 @@ export default function LessonView() {
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
       {/* Header */}
-      <header className="bg-[#1A365D] text-white p-8">
+      <header className="bg-[#1A365D] text-white p-8 shadow-md">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-4">
             <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full uppercase tracking-wider">
@@ -93,7 +112,7 @@ export default function LessonView() {
             </Link>
           </div>
           <h1 className="text-3xl font-bold">{lesson.title}</h1>
-          <p className="text-sm opacity-80 mt-2">By {user?.fullName || 'Teacher'} • {lesson.duration || 45} min</p>
+          <p className="text-sm opacity-80 mt-2">Duration: {lesson.duration || 45} min</p>
         </div>
       </header>
 
@@ -104,23 +123,23 @@ export default function LessonView() {
         </div>
       )}
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto p-6 space-y-6 pt-8">
+      {/* Content Blocks */}
+      <div className="max-w-4xl mx-auto p-6 space-y-6 pt-8 pb-20">
         {lesson.content_blocks && lesson.content_blocks.length > 0 ? (
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
             {lesson.content_blocks.map((block, i) => renderBlock(block, i))}
           </div>
         ) : (
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
-            <p className="text-gray-500">No content blocks available for this lesson.</p>
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center text-gray-500">
+            No content blocks available for this lesson.
           </div>
         )}
 
-        {/* Video */}
+        {/* Video Embed */}
         {lesson.video_url && (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-[#1A365D] mb-4">Lesson Video</h3>
-            <div className="aspect-video rounded-lg overflow-hidden">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mt-8">
+            <h3 className="font-bold text-[#1A365D] text-lg mb-4">Lesson Video</h3>
+            <div className="aspect-video rounded-lg overflow-hidden shadow-md">
               <iframe 
                 width="100%" 
                 height="100%" 
