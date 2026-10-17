@@ -148,6 +148,9 @@ export default function CreateLesson() {
       </header>
 
       <div className="max-w-4xl mx-auto p-6">
+        <div className="mb-6">
+          <BulkImporter />
+        </div>
 
         {/* DOCX IMPORTER BLOCK */}
         <div className="mb-6">
@@ -389,6 +392,7 @@ export default function CreateLesson() {
     </div>
   );
 }
+
 
 
 
