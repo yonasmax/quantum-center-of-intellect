@@ -151,9 +151,20 @@ export default function CreateLesson() {
         {/* DOCX IMPORTER BLOCK */}
         <div className="mb-6">
           <DocxImporter onImport={(data) => {
+            // 1. Set the blocks
             setContentBlocks(data.blocks);
+            
+            // 2. Auto-fill meta data
             if (data.coverImage) handleChange('cover_image_url', data.coverImage);
             if (data.videoUrl) handleChange('video_url', data.videoUrl);
+
+            // 3. Auto-fill Lesson Title from the first Heading 1
+            if (data.blocks.length > 0 && data.blocks[0].type === 'heading') {
+              handleChange('title', data.blocks[0].content);
+            }
+            
+            // 4. Show an alert so the teacher knows to save
+            alert('Import successful! Please review the Lesson Title, Subject, and Grade before clicking Save.');
           }} />
         </div>
       
@@ -379,6 +390,7 @@ export default function CreateLesson() {
     </div>
   );
 }
+
 
 
 
