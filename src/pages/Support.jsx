@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { initPayment } from '../services/paymentsAPI';
 import { recordDonation } from '../services/donationsAPI';
 // import SponsorCarousel from '../components/SponsorCarousel';
-import Footer from '../components/Footer';
+import Footer from '../components/Footer'; // force rebuild
 
 const TIERS = [
   { amount: 50, label: 'Supporter', description: 'Covers one lesson for one student' },
@@ -233,3 +233,4 @@ export default function Support() {
     </div>
   );
 }
+
