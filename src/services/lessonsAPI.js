@@ -70,3 +70,19 @@ export const deleteLesson = async (id) => {
   if (error) throw error;
   return { success: true };
 };
+
+export const getMyLessons = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+  
+  if (!user) return { data: { lessons: [] } };
+
+  const { data, error } = await supabase
+    .from('lessons')
+    .select('*')
+    .eq('teacher_id', user.id)
+    .order('created_at', { ascending: false });
+    
+  if (error) throw error;
+  return { data: { lessons: data || [] } };
+};
