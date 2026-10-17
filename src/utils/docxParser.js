@@ -8,6 +8,7 @@ export async function parseDocxToBlocks(file) {
       try {
         const arrayBuffer = e.target.result;
         const result = await mammoth.convertToHtml({ arrayBuffer });
+        
         const parser = new DOMParser();
         const doc = parser.parseFromString(result.value, 'text/html');
         
@@ -15,60 +16,62 @@ export async function parseDocxToBlocks(file) {
         let coverImage = null;
         let videoUrl = null;
         
-        const fullText = doc.body.innerText || "";
-        const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
+        const elements = Array.from(doc.body.children);
 
-        for (let i = 0; i < lines.length; i++) {
-          let line = lines[i];
+        for (let i = 0; i < elements.length; i++) {
+          const el = elements[i];
+          let text = el.textContent.trim();
+          
+          if (!text) continue;
 
-          // Ignore Teacher Tags
-          if (line.match(/^(> HHeading|> PParagraph!|ANIMAnimation|IMGImage|fxFormula|Media \(optional\)|Key Takeaways|Takeaways \(one per line\) one by one:|Learning Objectives|Objectives \(one per|line\)|Learning|Competence|Lesson Content|- Add Content Block)/i)) {
-            continue;
-          }
-          if (line.includes('Which of the following') || line.includes('What are the starting')) {
-             // Just let the quiz parser handle it below
-          } else if (line.match(/^>/) && !line.includes('> HHeading') && !line.includes('> PParagraph')) {
-             const cleanText = line.replace(/^>\s*/, '').trim();
-             if (cleanText.length > 5) {
-                 blocks.push({ type: 'callout', content: cleanText });
-             }
-             continue;
-          }
+          if (text.startsWith('COVER IMAGE:')) { coverImage = text.replace('COVER IMAGE:', '').trim(); continue; }
+          if (text.startsWith('VIDEO URL:')) { videoUrl = text.replace('VIDEO URL:', '').trim(); continue; }
 
-          if (line.startsWith('COVER IMAGE:')) { coverImage = line.replace('COVER IMAGE:', '').trim(); continue; }
-          if (line.startsWith('VIDEO URL:')) { videoUrl = line.replace('VIDEO URL:', '').trim(); continue; }
-
-          if (line.startsWith('[FORMULA]')) {
-            const match = line.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
+          if (text.includes('[FORMULA]')) {
+            const match = text.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
             if (match) blocks.push({ type: 'formula', content: match[1].trim() });
             continue;
           }
 
-          // Mashed Quizzes
-          if (line.match(/Q\.\d+/)) {
-            const qMatch = line.match(/Q\.\d+:?\s*(.*?)A\)\s*(.*?)B\)\s*(.*?)C\)\s*(.*?)D\)\s*(.*?)Answer:\s*([A-D])/i);
+          if (text.startsWith('>')) {
+            blocks.push({ type: 'callout', content: text.replace(/^>\s*/, '').trim() });
+            continue;
+          }
+
+          if (text.match(/Q\.\d+/)) {
+            const qMatch = text.match(/Q\.\d+:?\s*(.*?)A\)\s*(.*?)B\)\s*(.*?)C\)\s*(.*?)D\)\s*(.*?)Answer:\s*([A-D])/i);
             if (qMatch) {
               blocks.push({
                 type: 'quiz',
                 question: qMatch[1].trim(),
                 options: [qMatch[2].trim(), qMatch[3].trim(), qMatch[4].trim(), qMatch[5].trim()],
                 correctAnswer: qMatch[6].toUpperCase() === 'A' ? 0 : qMatch[6].toUpperCase() === 'B' ? 1 : qMatch[6].toUpperCase() === 'C' ? 2 : 3,
-                explanation: line.match(/Description:\s*(.*)/i) ? line.match(/Description:\s*(.*)/i)[1].trim() : ''
+                explanation: text.match(/Description:\s*(.*)/i) ? text.match(/Description:\s*(.*)/i)[1].trim() : ''
               });
             }
             continue;
           }
 
-          // Headings
-          if (line.length < 60 && (line.match(/^\d\./) || line.match(/^[A-Z][a-z]+( [A-Z][a-z]+)*$/))) {
-            blocks.push({ type: 'heading', content: line, level: 2 });
+          if (el.tagName === 'H1') { blocks.push({ type: 'heading', content: text, level: 1 }); continue; }
+          if (el.tagName === 'H2') { blocks.push({ type: 'heading', content: text, level: 2 }); continue; }
+          if (el.tagName === 'H3') { blocks.push({ type: 'heading', content: text, level: 3 }); continue; }
+
+          if (el.tagName === 'UL' || el.tagName === 'OL') {
+            const items = Array.from(el.querySelectorAll('li')).map(li => li.textContent.trim());
+            if (items.length > 0) blocks.push({ type: 'list', items, ordered: el.tagName === 'OL' });
             continue;
           }
 
-          // Normal Text
-          if (line.length > 20) {
-            blocks.push({ type: 'text', content: line });
+          if (el.tagName === 'TABLE') {
+            const rows = Array.from(el.querySelectorAll('tr')).map(tr => 
+              Array.from(tr.querySelectorAll('th, td')).map(td => td.textContent.trim())
+            );
+            if (rows.length > 0) blocks.push({ type: 'table', rows });
+            continue;
           }
+
+          // Normal text
+          blocks.push({ type: 'text', content: text });
         }
 
         resolve({ blocks, coverImage, videoUrl });
