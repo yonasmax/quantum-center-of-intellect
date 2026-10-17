@@ -24,16 +24,10 @@ export default function LessonView() {
     })();
   }, [lessonId]);
 
-  // If it's loading
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
-        <p className="text-[#1A365D] font-bold text-lg animate-pulse">Loading lesson...</p>
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]"><p className="text-[#1A365D] font-bold text-lg">Loading lesson...</p></div>;
   }
 
-  // If there's an error
   if (error || !lesson) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
@@ -45,22 +39,22 @@ export default function LessonView() {
     );
   }
 
-  // Safe extraction of blocks
-  let blocks = lesson.content_blocks || lesson.blocks || [];
-  // If it was saved as a JSON string (happens sometimes in Supabase)
+  // THE CRITICAL FIX: Look for both content_blocks and contentBlocks
+  let blocks = lesson.content_blocks || lesson.contentBlocks || lesson.blocks || [];
+  
+  // If it's somehow saved as a JSON string, parse it
   if (typeof blocks === 'string') {
     try { blocks = JSON.parse(blocks); } catch (e) { console.error(e); }
   }
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] pb-20">
-      
-      {/* HEADER */}
+      {/* Header */}
       <header className="bg-[#1A365D] text-white p-8 shadow-md">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-4">
             <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full uppercase tracking-wider">
-              {lesson.subject || 'Chemistry'} • {lesson.grade || 'Grade 10'}
+              {lesson.subject || 'Chemistry'} • {lesson.grade || 'Grade 9'}
             </span>
             <Link to="/catalog" className="text-sm font-bold bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors">
               Back to Catalog
@@ -71,22 +65,22 @@ export default function LessonView() {
         </div>
       </header>
 
-      {/* COVER IMAGE */}
+      {/* Cover Image */}
       {lesson.cover_image_url && (
         <div className="max-w-4xl mx-auto mt-8 px-6">
           <img src={lesson.cover_image_url} alt="Cover" className="w-full h-64 object-cover rounded-2xl shadow-lg" />
         </div>
       )}
 
-      {/* CONTENT BLOCKS */}
+      {/* Content Blocks */}
       <div className="max-w-4xl mx-auto p-6 mt-6">
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
           
-          {blocks.length === 0 && (
+          {(!blocks || blocks.length === 0) && (
             <p className="text-gray-500 text-center py-10">No content blocks found for this lesson.</p>
           )}
 
-          {blocks.map((block, i) => {
+          {blocks && blocks.map((block, i) => {
             if (!block || !block.type) return null;
 
             if (block.type === 'heading') {
@@ -124,7 +118,7 @@ export default function LessonView() {
         </div>
       </div>
 
-      {/* VIDEO */}
+      {/* Video */}
       {lesson.video_url && (
         <div className="max-w-4xl mx-auto px-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -142,7 +136,6 @@ export default function LessonView() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
