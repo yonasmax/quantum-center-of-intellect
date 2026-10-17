@@ -17,7 +17,6 @@ export default function Register() {
     role: 'student',
     grade: '9',
     phone: '',
-    agreedToTerms: false,
   });
 
   const [error, setError] = useState('');
@@ -39,9 +38,6 @@ export default function Register() {
     if (formData.password.length < 6) {
       return setError('Password must be at least 6 characters');
     }
-    if (!formData.agreedToTerms) {
-      return setError('You must agree to the Terms of Service and Privacy Policy.');
-    }
 
     setLoading(true);
     try {
@@ -54,6 +50,7 @@ export default function Register() {
         phone: formData.phone,
       });
 
+      // Send welcome email (fire-and-forget)
       if (result && !result.error) {
         sendWelcomeEmail(formData.email, formData.fullName)
           .then(() => console.log('[register] Welcome email sent'))
@@ -78,7 +75,7 @@ export default function Register() {
     return (
       <div className="min-h-screen bg-[#F5F7FA] flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
-          <div className="text-5xl mb-4">[OK]</div>
+          <div className="text-5xl mb-4">✅</div>
           <h1 className="text-xl font-bold text-[#1A365D] mb-3">Registration Successful!</h1>
           <p className="text-gray-600 mb-6">{success}</p>
           <Link
@@ -97,7 +94,7 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#1A365D] rounded-2xl mb-4">
-            <span className="text-3xl font-bold text-white">Q</span>
+            <span className="text-3xl">⚛️</span>
           </div>
           <h1 className="text-2xl font-bold text-[#1A365D] mb-1">
             Create Account
@@ -200,25 +197,6 @@ export default function Register() {
                 placeholder="Re-enter password"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1A365D] focus:border-transparent outline-none"
               />
-            </div>
-
-            <div className="flex items-start gap-2 pt-2">
-              <input
-                type="checkbox"
-                checked={formData.agreedToTerms}
-                onChange={(e) => handleChange('agreedToTerms', e.target.checked)}
-                className="mt-0.5 w-4 h-4 flex-shrink-0"
-              />
-              <label className="text-xs text-gray-600 leading-relaxed">
-                I agree to the{' '}
-                <Link to="/terms" target="_blank" className="text-[#ED8936] hover:underline font-bold">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link to="/privacy" target="_blank" className="text-[#ED8936] hover:underline font-bold">
-                  Privacy Policy
-                </Link>
-              </label>
             </div>
 
             <button

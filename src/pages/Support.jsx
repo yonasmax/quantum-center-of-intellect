@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { initPayment } from '../services/paymentsAPI';
 import { recordDonation } from '../services/donationsAPI';
-// // import SponsorCarousel from '../components/SponsorCarousel';
+// import SponsorCarousel from '../components/SponsorCarousel';
 import Footer from '../components/Footer';
 
 const TIERS = [
@@ -84,7 +84,7 @@ export default function Support() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
+    <div className="min-h-screen bg-[#F5F7FA] flex flex-col">
       <header className="bg-gradient-to-br from-[#1A365D] to-[#2C4A7C] text-white p-10 text-center">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-bold mb-3">Support Our Mission</h1>
@@ -94,14 +94,14 @@ export default function Support() {
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-6 py-10 space-y-8">
+      <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-10 space-y-8">
         {/* Impact Story */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h2 className="font-bold text-[#1A365D] text-lg mb-3">Why We Exist</h2>
           <p className="text-gray-700 leading-relaxed text-sm">
             Quantum Center of Intellect was built with one goal: to make premium
             chemistry, physics, biology, and math education available to every
-            Ethiopian student ? regardless of location or income. Every lesson,
+            Ethiopian student - regardless of location or income. Every lesson,
             quiz, and certificate is designed to build real understanding, not
             just memorization.
           </p>
@@ -204,7 +204,7 @@ export default function Support() {
           disabled={loading || (!selectedAmount && !customAmount)}
           className="w-full bg-[#ED8936] hover:bg-orange-500 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50"
         >
-          {loading ? 'Redirecting...' : `Donate ${selectedAmount || customAmount || '?'} ETB with Telebirr`}
+          {loading ? 'Redirecting...' : `Donate ${selectedAmount || customAmount || '-'} ETB with Telebirr`}
         </button>
 
         {/* Investor CTA */}
@@ -224,13 +224,12 @@ export default function Support() {
 
         <div className="text-center text-sm text-gray-500">
           <Link to="/dashboard" className="hover:text-[#1A365D]">
-            ? Back to Dashboard
+            &larr; Back to Dashboard
           </Link>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
-
-
-
