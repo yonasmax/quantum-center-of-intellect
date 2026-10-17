@@ -1,0 +1,70 @@
+﻿<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: Arial, sans-serif; line-height: 1.6; }
+  h1 { color: #1A365D; }
+  h2 { color: #2C4A7C; }
+  .callout { background-color: #FEF3C7; border-left: 4px solid #ED8936; padding: 10px; margin: 10px 0; }
+  .quiz { background-color: #F3F4F6; padding: 15px; border: 1px solid #E5E7EB; border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+  th { background-color: #1A365D; color: white; padding: 10px; text-align: left; }
+  td { border: 1px solid #CBD5E1; padding: 10px; }
+</style>
+</head>
+<body>
+
+<h1>Introduction to the Atom & Electron Configuration</h1>
+<p>This is standard reading text. Write your normal paragraphs here. The importer will turn this into a Paragraph block.</p>
+
+<h2>The Bohr Model</h2>
+<p>Understanding the structure of the atom is fundamental to chemistry. The Bohr model helps us visualize where electrons live.</p>
+
+<h3>Subatomic Particles</h3>
+<ul>
+  <li>Protons: Positively charged, found in the nucleus.</li>
+  <li>Neutrons: Neutral charge, found in the nucleus.</li>
+  <li>Electrons: Negatively charged, orbit the nucleus.</li>
+</ul>
+
+<div class="callout">
+  <strong>Key Takeaway (Format: Start with >)</strong><br>
+  > Remember: Protons are positive, Neutrons are neutral, Electrons are negative.
+</div>
+
+<h2>Electron Shell Capacities</h2>
+<table>
+  <tr>
+    <th>Shell</th>
+    <th>Formula</th>
+    <th>Max Electrons</th>
+  </tr>
+  <tr>
+    <td>K</td>
+    <td>2(1)² = 2</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>L</td>
+    <td>2(2)² = 8</td>
+    <td>8</td>
+  </tr>
+  <tr>
+    <td>M</td>
+    <td>2(3)² = 18</td>
+    <td>18</td>
+  </tr>
+</table>
+
+<h2>Practice Quiz</h2>
+<div class="quiz">
+  <strong>QUIZ QUESTION</strong><br>
+  What is the charge of a neutron?<br>
+  - +1<br>
+  - -1<br>
+  - 0<br>
+  <strong>Answer: 3</strong>
+</div>
+
+</body>
+</html>

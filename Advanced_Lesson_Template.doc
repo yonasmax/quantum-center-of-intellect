@@ -1,0 +1,70 @@
+﻿<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+  h1 { color: #1A365D; font-size: 24px; border-bottom: 2px solid #ED8936; padding-bottom: 5px; }
+  h2 { color: #2C4A7C; font-size: 18px; margin-top: 20px; }
+  .callout { background-color: #FEF3C7; border-left: 4px solid #ED8936; padding: 10px; margin: 15px 0; }
+  .quiz { background-color: #F8FAFC; padding: 15px; border: 1px solid #E2E8F0; border-radius: 8px; margin: 15px 0; }
+  .meta { background-color: #E0F2FE; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; color: #0369A1; }
+  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+  th { background-color: #1A365D; color: white; padding: 10px; text-align: left; }
+  td { border: 1px solid #CBD5E1; padding: 10px; }
+  .instruction { color: #64748B; font-size: 12px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="meta">
+  <strong>TEACHER INSTRUCTIONS:</strong> Follow the structure below. The parser uses these exact tags to build your interactive lesson.
+</div>
+
+<h1>Lesson Title Here (e.g., Introduction to Chemistry)</h1>
+
+<p><strong>COVER IMAGE:</strong> https://example.com/your-cover-image.jpg</p>
+<p><strong>VIDEO URL:</strong> https://www.youtube.com/watch?v=dQw4w9WgXcQ</p>
+
+<h2>1. Section Heading</h2>
+<p>This is a normal paragraph. Write your lesson content here. Keep it clear and easy to read for students.</p>
+
+<div class="callout">
+  <strong>Key Takeaway</strong><br>
+  > Start your sentence with a greater-than symbol to make a highlighted callout box like this. Use this for important notes.
+</div>
+
+<h2>2. Formulas</h2>
+<p>Use the [FORMULA] tag to insert math or chemistry formulas.</p>
+<p>[FORMULA] 2n^2 [/FORMULA]</p>
+
+<h2>3. Data Tables</h2>
+<p>Just use Word's standard Insert > Table feature. The parser will turn your table into a formatted data block.</p>
+<table>
+  <tr><th>Shell</th><th>Max Electrons</th><th>Formula</th></tr>
+  <tr><td>K</td><td>2</td><td>2(1)²</td></tr>
+  <tr><td>L</td><td>8</td><td>2(2)²</td></tr>
+</table>
+
+<h2>4. Quizzes</h2>
+<p class="instruction">Use the exact format below for quizzes. Include the question, choices, the correct answer number, and an explanation.</p>
+
+<div class="quiz">
+  <strong>Q.1: What is the charge of a neutron?</strong><br>
+  A) +1<br>
+  B) -1<br>
+  C) 0<br>
+  <strong>Answer: C</strong><br>
+  <em>Description: Neutrons have no charge. They are neutral particles found in the nucleus.</em>
+</div>
+
+<div class="quiz">
+  <strong>Q.2: Which particle determines the atomic number?</strong><br>
+  A) Neutron<br>
+  B) Proton<br>
+  C) Electron<br>
+  <strong>Answer: B</strong><br>
+  <em>Description: The number of protons defines the element and its atomic number.</em>
+</div>
+
+</body>
+</html>
