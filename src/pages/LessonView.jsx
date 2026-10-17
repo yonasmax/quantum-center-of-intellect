@@ -12,8 +12,11 @@ export default function LessonView() {
     (async () => {
       try {
         const res = await getLesson(lessonId);
-        if (res && res.data && res.data.lesson) {
-          setLesson(res.data.lesson);
+        // Safely extract the lesson whether the API returns it as an array or object
+        const fetchedLesson = res?.data?.lesson || (Array.isArray(res?.data) ? res.data[0] : res?.data);
+        
+        if (fetchedLesson) {
+          setLesson(fetchedLesson);
         } else {
           setError('Lesson not found in database.');
         }
@@ -39,7 +42,7 @@ export default function LessonView() {
     );
   }
 
-  // THE ULTIMATE SAFETY NET
+  // Check for all possible content block names
   let blocks = lesson.content_blocks || lesson.contentBlocks || lesson.blocks || [];
   
   if (typeof blocks === 'string') {
@@ -47,8 +50,6 @@ export default function LessonView() {
   }
 
   if (!Array.isArray(blocks)) { blocks = []; }
-  console.log('=== BLOCKS LOADED ===');
-  console.log(blocks);
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] pb-20">
@@ -122,4 +123,3 @@ export default function LessonView() {
     </div>
   );
 }
-
