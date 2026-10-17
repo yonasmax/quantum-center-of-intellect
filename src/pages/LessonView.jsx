@@ -7,6 +7,7 @@ export default function LessonView() {
   const [lesson, setLesson] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -62,17 +63,25 @@ export default function LessonView() {
             </Link>
           </div>
           <h1 className="text-3xl font-bold">{lesson.title}</h1>
+          <p className="text-sm opacity-80 mt-2">Duration: {lesson.duration || 45} min</p>
         </div>
       </header>
 
-      {lesson.cover_image_url && (
+      {/* COVER IMAGE - Now hides if broken */}
+      {lesson.cover_image_url && !imageError && (
         <div className="max-w-4xl mx-auto mt-8 px-6">
-          <img src={lesson.cover_image_url} alt="Cover" className="w-full h-64 object-cover rounded-2xl shadow-lg" />
+          <img 
+            src={lesson.cover_image_url} 
+            alt="Cover" 
+            className="w-full h-64 object-cover rounded-2xl shadow-lg" 
+            onError={() => setImageError(true)}
+          />
         </div>
       )}
 
+      {/* CONTENT BLOCKS */}
       <div className="max-w-4xl mx-auto p-6 mt-6">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 min-h-[200px]">
           
           {blocks.length === 0 && (
             <p className="text-gray-500 text-center py-10">No content blocks found in the database.</p>
