@@ -14,6 +14,10 @@ export default function LessonView() {
         const res = await getLesson(lessonId);
         if (res && res.data && res.data.lesson) {
           setLesson(res.data.lesson);
+          console.log('=== DB LESSON DATA ===');
+          console.log(res.data.lesson);
+          console.log('=== BLOCKS ===');
+          console.log(res.data.lesson.content_blocks);
         } else {
           setError('Lesson not found in database.');
         }
@@ -139,3 +143,4 @@ export default function LessonView() {
     </div>
   );
 }
+
