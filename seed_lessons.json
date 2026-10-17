@@ -1,0 +1,33 @@
+﻿[
+  {
+    "title": "1. Introduction to Chemical Reactions",
+    "subject": "Chemistry",
+    "grade": "Grade 10",
+    "content_blocks": [
+      { "type": "heading", "content": "Understanding Chemical vs Physical Changes", "level": 2 },
+      { "type": "text", "content": "Everything in the universe undergoes continuous change, which can be broadly classified into physical and chemical changes. In a physical change, the physical properties or states of matter change, but no new chemical species are formed." },
+      { "type": "text", "content": "Conversely, a chemical change involves the rearrangement of atoms as chemical bonds are broken and new bonds are formed, producing new substances." },
+      { "type": "formula", "content": "Reactants -> Products" },
+      { "type": "callout", "content": "Physical changes alter appearance but not chemical composition." },
+      { "type": "quiz", "question": "Which of the following is classified as a physical change?", "options": ["Burning wood", "Melting ice cream", "Rusting iron", "Souring milk"], "correctAnswer": 1, "explanation": "Melting is a phase change. The chemical identity remains the same." },
+      { "type": "quiz", "question": "What are the starting substances in any chemical reaction called?", "options": ["Products", "Reactants", "Catalysts", "Precipitates"], "correctAnswer": 1, "explanation": "Reactants are consumed to form products." }
+    ],
+    "cover_image_url": "https://images.unsplash.com/photo-1532094349884-543bc11b234d",
+    "video_url": "https://www.youtube.com/watch?v=37nlv7vJQvk",
+    "is_published": true
+  },
+  {
+    "title": "2. Evidences of Chemical Reactions",
+    "subject": "Chemistry",
+    "grade": "Grade 10",
+    "content_blocks": [
+      { "type": "heading", "content": "Observing Chemical Changes", "level": 2 },
+      { "type": "text", "content": "When chemical reactions take place, they are frequently accompanied by distinct, observable macroscopic signs. These include color changes, gas evolution, precipitate formation, and temperature changes." },
+      { "type": "formula", "content": "Zn(s) + H2SO4(aq) -> ZnSO4(aq) + H2(g)" },
+      { "type": "quiz", "question": "The formation of an insoluble solid is known as:", "options": ["Melting", "Precipitation", "Boiling", "Sublimation"], "correctAnswer": 1, "explanation": "A precipitate is an insoluble solid." }
+    ],
+    "cover_image_url": "https://images.unsplash.com/photo-1554475901-4538ddfbccc2",
+    "video_url": "https://www.youtube.com/watch?v=e_F6ZgGGpCc",
+    "is_published": true
+  }
+]
