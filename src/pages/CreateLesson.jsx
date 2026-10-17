@@ -147,6 +147,15 @@ export default function CreateLesson() {
       </header>
 
       <div className="max-w-4xl mx-auto p-6">
+
+        {/* DOCX IMPORTER BLOCK */}
+        <div className="mb-6">
+          <DocxImporter onImport={(data) => {
+            setContentBlocks(data.blocks);
+            if (data.coverImage) handleChange('cover_image_url', data.coverImage);
+            if (data.videoUrl) handleChange('video_url', data.videoUrl);
+          }} />
+        </div>
       
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg mb-4">
@@ -370,6 +379,7 @@ export default function CreateLesson() {
     </div>
   );
 }
+
 
 
 
