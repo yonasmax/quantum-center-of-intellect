@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { sendWelcomeEmail } from '../utils/emailClient';
@@ -75,7 +75,7 @@ export default function Register() {
     return (
       <div className="min-h-screen bg-[#F5F7FA] flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
-          <div className="text-5xl mb-4">✅</div>
+          <div className="text-5xl mb-4">âœ…</div>
           <h1 className="text-xl font-bold text-[#1A365D] mb-3">Registration Successful!</h1>
           <p className="text-gray-600 mb-6">{success}</p>
           <Link
@@ -94,7 +94,7 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#1A365D] rounded-2xl mb-4">
-            <span className="text-3xl">⚛️</span>
+            <span className="text-3xl">âš›ï¸</span>
           </div>
           <h1 className="text-2xl font-bold text-[#1A365D] mb-1">
             Create Account
@@ -182,7 +182,7 @@ export default function Register() {
                 value={formData.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 required
-                placeholder="At least 6 characters"
+                placeholder="8+ chars (A-Z, a-z, 0-9)"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1A365D] focus:border-transparent outline-none"
               />
             </div>
