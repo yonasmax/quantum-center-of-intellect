@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 
 const BLOCK_TYPES = [
   { type: 'heading', label: 'Heading', icon: 'H' },
@@ -352,3 +352,4 @@ export default function ContentBlockEditor({ blocks, onChange }) {
     </div>
   );
 }
+
