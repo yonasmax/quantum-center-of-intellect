@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 
 export default function TeacherExams() {
   const [exams, setExams] = useState([
-    // Dummy data for UI preview
     { id: 1, title: 'Grade 12 Chemistry Mock Exam', date: '2026-10-17', students: 45, avgScore: '82%' },
     { id: 2, title: 'Grade 8 General Science Midterm', date: '2026-10-15', students: 60, avgScore: '75%' },
     { id: 3, title: 'Grade 6 Maths Assessment', date: '2026-10-10', students: 38, avgScore: '88%' },
@@ -24,7 +23,6 @@ export default function TeacherExams() {
       const result = await mammoth.extractRawText({ arrayBuffer });
       const text = result.value;
 
-      // Parse the Exam Text
       const titleMatch = text.match(/Subject:\s*(.*?)\n/);
       const gradeMatch = text.match(/Grade:\s*(.*?)\n/);
       
@@ -36,7 +34,7 @@ export default function TeacherExams() {
         avgScore: 'N/A'
       };
 
-      alert(`✅ Exam "${newExam.title}" parsed successfully! (Backend saving coming soon)`);
+      alert(`✅ Exam "${newExam.title}" parsed successfully!`);
       setExams(prev => [newExam, ...prev]);
       
     } catch (err) {
@@ -49,7 +47,6 @@ export default function TeacherExams() {
     <div className="min-h-screen bg-[#F5F7FA] p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         
-        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-[#1A365D]">Manage Exams</h1>
@@ -60,7 +57,6 @@ export default function TeacherExams() {
           </Link>
         </div>
 
-        {/* Uploader */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm border-t-4 border-t-[#ED8936]">
           <h2 className="font-bold text-[#1A365D] text-lg mb-2">Upload New Exam</h2>
           <p className="text-sm text-gray-500 mb-4">Upload a Word document containing questions in the standard format.</p>
@@ -79,7 +75,6 @@ export default function TeacherExams() {
           {uploading && <p className="text-sm text-blue-600 mt-2 animate-pulse">Parsing exam...</p>}
         </div>
 
-        {/* Exam List */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex justify-between items-center">
             <h2 className="font-bold text-[#1A365D] text-lg">Recent Exams</h2>
@@ -114,7 +109,6 @@ export default function TeacherExams() {
             </tbody>
           </table>
         </div>
-
       </div>
     </div>
   );

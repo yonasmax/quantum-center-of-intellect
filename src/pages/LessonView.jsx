@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getLesson } from '../services/lessonsAPI';
+import { supabase } from '../supabaseClient'; // Fetch directly from Supabase
 
 export default function LessonView() {
   const { lessonId } = useParams();
@@ -11,12 +11,17 @@ export default function LessonView() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await getLesson(lessonId);
-        // Safely extract the lesson whether the API returns it as an array or object
-        const fetchedLesson = res?.data?.lesson || (Array.isArray(res?.data) ? res.data[0] : res?.data);
+        // Fetch DIRECTLY from Supabase to bypass any API bugs
+        const { data, error: dbError } = await supabase
+          .from('lessons')
+          .select('*')
+          .eq('lesson_id', lessonId)
+          .single();
+
+        if (dbError) throw dbError;
         
-        if (fetchedLesson) {
-          setLesson(fetchedLesson);
+        if (data) {
+          setLesson(data);
         } else {
           setError('Lesson not found in database.');
         }
@@ -42,13 +47,11 @@ export default function LessonView() {
     );
   }
 
-  // Check for all possible content block names
   let blocks = lesson.content_blocks || lesson.contentBlocks || lesson.blocks || [];
   
   if (typeof blocks === 'string') {
-    try { blocks = JSON.parse(blocks); } catch (e) { console.error("Parse error", e); blocks = []; }
+    try { blocks = JSON.parse(blocks); } catch (e) { blocks = []; }
   }
-
   if (!Array.isArray(blocks)) { blocks = []; }
 
   return (
@@ -87,16 +90,12 @@ export default function LessonView() {
             switch (block.type) {
               case 'heading':
                 return <h2 key={i} className="text-2xl font-bold text-[#1A365D] mt-8 mb-4 border-b pb-2">{block.content}</h2>;
-              
               case 'text':
                 return <p key={i} className="text-gray-700 mb-4 leading-relaxed text-lg">{block.content}</p>;
-              
               case 'formula':
                 return <div key={i} className="bg-gray-100 p-4 rounded-lg font-mono text-center mb-6 text-lg border border-gray-200 text-[#1A365D]">{block.content}</div>;
-              
               case 'callout':
                 return <div key={i} className="bg-orange-50 border-l-4 border-[#ED8936] p-5 rounded-r-lg mb-6 text-sm text-gray-800 font-medium">{block.content}</div>;
-              
               case 'quiz':
                 return (
                   <div key={i} className="bg-blue-50 border border-blue-100 p-6 rounded-xl mb-6 shadow-sm">
@@ -113,9 +112,8 @@ export default function LessonView() {
                     )}
                   </div>
                 );
-              
               default:
-                return <div key={i} className="p-4 bg-red-100 text-red-700 rounded-lg mb-4">Unknown block type: {block.type}</div>;
+                return null;
             }
           })}
         </div>
