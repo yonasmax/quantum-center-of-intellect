@@ -28,7 +28,7 @@ export const saveLesson = async (lessonData) => {
     const { data, error } = await supabase
       .from('lessons')
       .update(payload)
-      .eq('id', lessonData.lesson_id)
+      .eq('lesson_id', lessonData.lesson_id)
       .select()
       .single();
     if (error) throw error;
@@ -48,7 +48,7 @@ export const getLesson = async (id) => {
   const { data, error } = await supabase
     .from('lessons')
     .select('*')
-    .eq('id', id)
+    .eq('lesson_id', id)
     .single();
   
   if (error) throw error;
@@ -65,7 +65,7 @@ export const getLessons = async () => {
 };
 
 export const deleteLesson = async (id) => {
-  const { error } = await supabase.from('lessons').delete().eq('id', id);
+  const { error } = await supabase.from('lessons').delete().eq('lesson_id', id);
   if (error) throw error;
   return { success: true };
 };
@@ -85,5 +85,6 @@ export const getMyLessons = async () => {
   if (error) throw error;
   return { data: { lessons: data || [] } };
 };
+
 
 
