@@ -1,8 +1,6 @@
-﻿// src/components/BulkImporter.jsx
-import React, { useState } from 'react';
-import { parseDocxToBlocks } from '../utils/docxParser';
-import { saveLesson } from '../services/lessonsAPI';
+﻿import React, { useState } from 'react';
 import mammoth from 'mammoth';
+import { saveLesson } from '../services/lessonsAPI';
 
 export default function BulkImporter() {
   const [loading, setLoading] = useState(false);
@@ -28,7 +26,7 @@ export default function BulkImporter() {
       const parser = new DOMParser();
       const doc = parser.parseFromString(result.value, 'text/html');
       
-      // Split into lessons based on H1 tags (or the special break tag)
+      // Split into lessons based on H1 tags
       const bodyElements = Array.from(doc.body.children);
       let currentLessonElements = [];
       const lessonsToProcess = [];
@@ -38,39 +36,66 @@ export default function BulkImporter() {
           lessonsToProcess.push(currentLessonElements);
           currentLessonElements = [];
         }
-        currentLessonElements.push(el.outerHTML);
+        currentLessonElements.push(el);
       });
       if (currentLessonElements.length > 0) lessonsToProcess.push(currentLessonElements);
 
       const lessonsData = [];
       for (const lessonHtml of lessonsToProcess) {
-        const tempHtml = `<html><body>${lessonHtml.join('')}</body></html>`;
-        const tempFile = new File([tempHtml], "temp.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-        
-        // We fake a file upload to use the parser
-        const blob = new Blob([tempHtml], { type: 'text/html' });
-        const fakeFile = new File([blob], "temp.docx", { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-        
-        // Since parseDocxToBlocks expects a real docx, we'll parse manually here:
-        const tempParser = new DOMParser();
-        const tempDoc = tempParser.parseFromString(tempHtml, 'text/html');
-        
-        // Let's just extract the Title and basic blocks
         let title = "Untitled Lesson";
+        let coverImage = null;
+        let videoUrl = null;
         let blocks = [];
-        
-        Array.from(tempDoc.body.children).forEach(el => {
-          if (el.tagName === 'H1') title = el.textContent.trim();
-          else if (el.tagName === 'H2') blocks.push({ type: 'heading', content: el.textContent.trim(), level: 2 });
+
+        lessonHtml.forEach(el => {
+          const text = el.textContent.trim();
+          if (el.tagName === 'H1') title = text;
+          else if (text.startsWith('COVER IMAGE:')) coverImage = text.replace('COVER IMAGE:', '').trim();
+          else if (text.startsWith('VIDEO URL:')) videoUrl = text.replace('VIDEO URL:', '').trim();
+          else if (el.tagName === 'H2') blocks.push({ type: 'heading', content: text });
           else if (el.tagName === 'P') {
-            const text = el.textContent.trim();
-            if (text && !text.includes('TEACHER INSTRUCTIONS')) blocks.push({ type: 'text', content: text });
+            if (text.includes('[FORMULA]')) {
+               const match = text.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
+               if (match) blocks.push({ type: 'formula', content: match[1].trim() });
+            } else if (text.length > 0 && !text.includes('COVER IMAGE') && !text.includes('VIDEO URL')) {
+               blocks.push({ type: 'text', content: text });
+            }
+          }
+          else if (el.tagName === 'DIV' && el.className.includes('quiz')) {
+            // Parse Quiz
+            const qText = el.querySelector('strong')?.textContent || '';
+            const lines = el.innerHTML.split('<br>');
+            let options = [];
+            let answer = '';
+            let desc = '';
+            
+            lines.forEach(line => {
+              if (/^[A-D]\)/.test(line)) options.push(line.replace(/^[A-D]\)\s*/, '').replace(/<.*?>/g, ''));
+              else if (line.includes('Answer:')) answer = line.replace(/.*Answer:\s*/, '').replace(/<.*?>/g, '').trim();
+              else if (line.includes('Description:')) desc = line.replace(/.*Description:\s*/, '').replace(/<.*?>/g, '').trim();
+            });
+
+            if (qText && options.length > 0) {
+               blocks.push({ 
+                 type: 'quiz', 
+                 question: qText.replace('Answer:', '').trim(), 
+                 options, 
+                 correctAnswer: answer === 'A' ? 0 : answer === 'B' ? 1 : answer === 'C' ? 2 : 3, 
+                 explanation: desc 
+               });
+            }
+          }
+          else if (el.tagName === 'DIV' && el.className.includes('callout')) {
+             blocks.push({ type: 'callout', content: el.textContent.replace('Key Takeaways:', '').trim() });
           }
         });
 
-        lessonsData.push({ title, blocks });
+        if (title !== "Untitled Lesson" && blocks.length > 0) {
+           lessonsData.push({ title, blocks, coverImage, videoUrl });
+        }
       }
 
+      if (lessonsData.length === 0) throw new Error('No lessons found. Make sure the document has <h1> tags.');
       setParsedLessons(lessonsData);
     } catch (err) {
       setError('Failed to parse document: ' + err.message);
@@ -92,6 +117,8 @@ export default function BulkImporter() {
           objectives: [],
           competence: '',
           content_blocks: lesson.blocks,
+          cover_image_url: lesson.coverImage,
+          video_url: lesson.videoUrl,
           takeaways: [],
           is_published: true,
         });
@@ -137,7 +164,7 @@ export default function BulkImporter() {
           <ul className="bg-white p-4 rounded-lg max-h-60 overflow-y-auto border border-blue-100 text-sm">
             {parsedLessons.map((l, i) => (
               <li key={i} className="mb-2 pb-2 border-b border-gray-100 last:border-0">
-                <strong>{i + 1}. {l.title}</strong> ({l.blocks.length} content blocks)
+                <strong>{i + 1}. {l.title}</strong> ({l.blocks.length} blocks)
               </li>
             ))}
           </ul>
