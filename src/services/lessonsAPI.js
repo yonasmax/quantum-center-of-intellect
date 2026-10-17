@@ -35,9 +35,8 @@ export const saveLesson = async (lessonData) => {
     return { data: { lesson: data } };
   } else {
     // Insert new
-    const { data, error } = await supabase
-      .from('lessons')
-      .insert([payload])
+    delete payload.lesson_id; // ensure id is auto-generated
+    const { data, error } = await supabase.from('lessons').insert([payload])
       .select()
       .single();
     if (error) throw error;
@@ -86,4 +85,5 @@ export const getMyLessons = async () => {
   if (error) throw error;
   return { data: { lessons: data || [] } };
 };
+
 
