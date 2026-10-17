@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import SponsorCard from './SponsorCard';
 import { getActiveSponsors } from '../services/sponsorsAPI';
 
@@ -10,9 +10,12 @@ export default function SponsorCarousel({ variant = 'compact', rotateMs = 8000 }
     (async () => {
       try {
         const res = await getActiveSponsors();
-        setSponsors(res.data.sponsors);
+        // Safety check: ensure res.data.sponsors exists and is an array
+        if (res && res.data && Array.isArray(res.data.sponsors)) {
+          setSponsors(res.data.sponsors);
+        }
       } catch (e) {
-        console.warn('[sponsor] Load failed:', e.message);
+        console.warn('[sponsor] Load failed silently:', e.message);
       }
     })();
   }, []);

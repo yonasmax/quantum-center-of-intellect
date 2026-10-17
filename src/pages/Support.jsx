@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { initPayment } from '../services/paymentsAPI';
 import { recordDonation } from '../services/donationsAPI';
-// import SponsorCarousel from '../components/SponsorCarousel';
+import SponsorCarousel from '../components/SponsorCarousel';
 import Footer from '../components/Footer'; // force rebuild
 
 const TIERS = [
@@ -112,7 +112,7 @@ export default function Support() {
         </div>
 
         {/* Sponsor block */}
-        {/* SponsorCarousel disabled for now */}
+        <SponsorCarousel variant="banner" />
 
         {/* Donation tiers */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -233,4 +233,5 @@ export default function Support() {
     </div>
   );
 }
+
 
