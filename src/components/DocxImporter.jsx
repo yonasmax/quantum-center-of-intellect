@@ -62,7 +62,7 @@ export default function DocxImporter({ onImport }) {
   };
 
   const confirmImport = () => {
-    if (preview && onImport) {
+    if (preview && preview.blocks && preview.blocks.length > 0 && onImport) {
       // Append the uploaded images as new blocks at the end
       const imageBlocks = uploadedImages.map(url => ({ type: 'image', url }));
       const finalBlocks = [...preview.blocks, ...imageBlocks];
@@ -137,6 +137,8 @@ export default function DocxImporter({ onImport }) {
             </div>
             <button
               onClick={confirmImport}
+disabled={!preview || !preview.blocks || preview.blocks.length === 0}
+className="bg-[#ED8936] hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50"
               className="bg-[#ED8936] hover:bg-orange-500 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-sm"
             >
               Confirm Import
@@ -161,3 +163,4 @@ export default function DocxImporter({ onImport }) {
     </div>
   );
 }
+
