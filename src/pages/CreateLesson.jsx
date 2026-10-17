@@ -160,9 +160,7 @@ export default function CreateLesson() {
             if (data.videoUrl) handleChange('video_url', data.videoUrl);
 
             // 3. Auto-fill Lesson Title from the first Heading 1
-            if (data.blocks.length > 0 && data.blocks[0].type === 'heading') {
-              handleChange('title', data.blocks[0].content);
-            }
+            if (data.blocks.length > 0) { const h1 = data.blocks.find(b => b.type === 'heading'); if (h1) handleChange('title', h1.content); }
             
             // 4. Show an alert so the teacher knows to save
             alert('Import successful! Please review the Lesson Title, Subject, and Grade before clicking Save.');
@@ -391,6 +389,7 @@ export default function CreateLesson() {
     </div>
   );
 }
+
 
 
 

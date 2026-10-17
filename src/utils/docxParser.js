@@ -8,122 +8,83 @@ export async function parseDocxToBlocks(file) {
       try {
         const arrayBuffer = e.target.result;
         const result = await mammoth.convertToHtml({ arrayBuffer });
-        let html = result.value;
-
+        
         const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        const doc = parser.parseFromString(result.value, 'text/html');
         
         let blocks = [];
         let coverImage = null;
         let videoUrl = null;
         
-        const elements = Array.from(doc.body.children);
+        // 1. Get the entire text content of the document
+        const fullText = doc.body.innerText || "";
+        const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
 
-        for (let i = 0; i < elements.length; i++) {
-          const el = elements[i];
-          let text = el.textContent.trim();
-          
-          // IGNORE EMPTY BLOCKS
-          if (!text && el.tagName !== 'TABLE' && el.tagName !== 'IMG') continue;
+        for (let i = 0; i < lines.length; i++) {
+          let line = lines[i];
 
-          if (text.startsWith('COVER IMAGE:')) {
-            coverImage = text.replace('COVER IMAGE:', '').trim();
+          if (line.startsWith('COVER IMAGE:')) { coverImage = line.replace('COVER IMAGE:', '').trim(); continue; }
+          if (line.startsWith('VIDEO URL:')) { videoUrl = line.replace('VIDEO URL:', '').trim(); continue; }
+
+          if (line.startsWith('[FORMULA]')) {
+            const match = line.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
+            if (match) blocks.push({ type: 'formula', content: match[1].trim() });
             continue;
           }
-          if (text.startsWith('VIDEO URL:')) {
-            videoUrl = text.replace('VIDEO URL:', '').trim();
+
+          if (line.startsWith('>')) {
+            blocks.push({ type: 'callout', content: line.replace(/^>\s*/, '').trim() });
             continue;
           }
 
-          if (el.tagName === 'H1') {
-            blocks.push({ type: 'heading', content: text, level: 1 });
-          } else if (el.tagName === 'H2') {
-            blocks.push({ type: 'heading', content: text, level: 2 });
-          } else if (el.tagName === 'H3') {
-            blocks.push({ type: 'heading', content: text, level: 3 });
-          } else if (text.includes('[FORMULA]')) {
-            const match = text.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
-            if (match) {
-              blocks.push({ type: 'formula', content: match[1].trim() });
+          // REGEX MATCH FOR QUIZZES (Handles mashed text)
+          if (line.match(/Q\.\d+/)) {
+            // Check if it's all mashed into one line
+            const qMatch = line.match(/Q\.\d+:?\s*(.*?)A\)\s*(.*?)B\)\s*(.*?)C\)\s*(.*?)D\)\s*(.*?)Answer:\s*([A-D])/i);
+            
+            if (qMatch) {
+              blocks.push({
+                type: 'quiz',
+                question: qMatch[1].trim(),
+                options: [qMatch[2].trim(), qMatch[3].trim(), qMatch[4].trim(), qMatch[5].trim()],
+                correctAnswer: qMatch[6].toUpperCase() === 'A' ? 0 : qMatch[6].toUpperCase() === 'B' ? 1 : qMatch[6].toUpperCase() === 'C' ? 2 : 3,
+                explanation: line.match(/Description:\s*(.*)/i) ? line.match(/Description:\s*(.*)/i)[1].trim() : ''
+              });
+            } else {
+              // If it's on separate lines
+              let question = line.replace(/^Q\.\d+:?\s*/, '');
+              let options = [];
+              let correct = 0;
+              let desc = '';
+              let j = i + 1;
+              while (j < lines.length && !lines[j].match(/Q\.\d+/)) {
+                let next = lines[j];
+                if (/^[A-D]\)/.test(next)) options.push(next.replace(/^[A-D]\)\s*/, ''));
+                else if (next.startsWith('Answer:')) {
+                   const letter = next.replace('Answer:', '').trim().toUpperCase();
+                   correct = letter === 'A' ? 0 : letter === 'B' ? 1 : letter === 'C' ? 2 : 3;
+                }
+                else if (next.toLowerCase().startsWith('description:')) desc = next.replace(/description:/i, '').trim();
+                else if (next.includes('Description:')) desc = next.split('Description:')[1].trim();
+                j++;
+              }
+              if (options.length > 0) {
+                blocks.push({ type: 'quiz', question, options, correctAnswer: correct, explanation: desc });
+              }
+              i = j - 1;
             }
-          } else if (text.startsWith('>')) {
-             // Group all sequential ">" lines into one callout
-             let calloutText = text.replace(/^>\s*/, '').replace(/Key Takeaway/i, '').trim();
-             
-             // Look ahead to see if next items are also part of the callout
-             let j = i + 1;
-             while (j < elements.length) {
-                 let nextText = elements[j].textContent.trim();
-                 if (nextText.startsWith('-') || nextText.startsWith('>') || (nextText.length > 0 && !nextText.startsWith('Q.'))) {
-                    // If it's a bullet point or continuation
-                    calloutText += '\n' + nextText.replace(/^[-•>]\s*/, '').trim();
-                    j++;
-                 } else {
-                    break;
-                 }
-             }
-             blocks.push({ type: 'callout', content: calloutText });
-             i = j - 1; // Skip the elements we just grouped
-             
-          } else if (el.tagName === 'UL' || el.tagName === 'OL') {
-            const items = Array.from(el.querySelectorAll('li')).map(li => li.textContent.trim()).filter(Boolean);
-            if (items.length > 0) blocks.push({ type: 'list', items, ordered: el.tagName === 'OL' });
-          } else if (el.tagName === 'TABLE') {
-            const rows = Array.from(el.querySelectorAll('tr')).map(tr => 
-              Array.from(tr.querySelectorAll('th, td')).map(td => td.textContent.trim())
-            ).filter(r => r.some(c => c));
-            if (rows.length > 0) blocks.push({ type: 'table', rows });
-          } else if (el.tagName === 'IMG' || text.includes('Uploaded Image')) {
-             blocks.push({ type: 'text', content: '[Image Placeholder: Upload your graph/figure below]' });
-          } else if (text.includes('Q.')) {
-             const lines = el.innerText.split('\n').map(l => l.trim()).filter(Boolean);
-             let questionText = '';
-             let choices = [];
-             let correctAnswer = '';
-             let description = '';
-
-             lines.forEach(line => {
-               if (line.match(/^Q\.\d+:/) || line.startsWith('Q.')) {
-                 questionText = line.replace(/^Q\.\d+:?\s*/, '');
-               } else if (/^[A-Z]\)/.test(line)) {
-                 choices.push(line.replace(/^[A-Z]\)\s*/, ''));
-               } else if (line.startsWith('Answer:')) {
-                 correctAnswer = line.replace('Answer:', '').trim();
-               } else if (line.toLowerCase().startsWith('description:')) {
-                 description = line.replace(/description:/i, '').trim();
-               }
-             });
-
-             if (questionText && choices.length > 0) {
-               let answerIndex = 0;
-               const letter = correctAnswer.toUpperCase();
-               if (letter === 'A') answerIndex = 0;
-               else if (letter === 'B') answerIndex = 1;
-               else if (letter === 'C') answerIndex = 2;
-               else if (letter === 'D') answerIndex = 3;
-               
-               blocks.push({ 
-                 type: 'quiz', 
-                 question: questionText,
-                 options: choices,
-                 correctAnswer: answerIndex,
-                 explanation: description
-               });
-             } else {
-               blocks.push({ type: 'text', content: text });
-             }
-          } else if (el.tagName === 'P') {
-            if (!text.includes('TEACHER INSTRUCTIONS') && !text.includes('The parser uses these exact tags')) {
-              blocks.push({ type: 'text', content: text });
-            }
+            continue;
           }
+
+          // Headings (Simple heuristic)
+          if (line.length < 60 && (line.match(/^\d\./) || line.match(/^[A-Z][a-z]+( [A-Z][a-z]+)*$/))) {
+            blocks.push({ type: 'heading', content: line, level: 2 });
+            continue;
+          }
+
+          // Normal Text
+          blocks.push({ type: 'text', content: line });
         }
-
-        // Final pass to remove any accidental empty text blocks
-        blocks = blocks.filter(b => {
-           if (b.type === 'text' && !b.content) return false;
-           return true;
-        });
 
         resolve({ blocks, coverImage, videoUrl });
       } catch (err) {
