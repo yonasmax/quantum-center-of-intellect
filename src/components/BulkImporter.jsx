@@ -21,29 +21,26 @@ export default function BulkImporter() {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      // Use extractRawText to get clean text without messy HTML
       const result = await mammoth.extractRawText({ arrayBuffer });
       const text = result.value;
 
-      // Split by "COVER IMAGE:" or "COVER IMAGE" 
+      // Split the raw text by "COVER IMAGE:"
       const lessonsRaw = text.split(/COVER IMAGE:/i).filter(chunk => chunk.trim().length > 0);
-      
       const lessonsData = [];
 
       for (let i = 0; i < lessonsRaw.length; i++) {
         let chunk = lessonsRaw[i].trim();
         
-        // Extract Cover Image & Video
-        const coverMatch = chunk.match(/https?:\/\/[^\s]+/);
-        const coverImage = coverMatch ? coverMatch[0] : null;
-        
-        const videoMatch = chunk.match(/https:\/\/www\.youtube\.com\/watch\?v=[^\s]+/);
-        const videoUrl = videoMatch ? videoMatch[0] : null;
+        // Extract URLs
+        const urlMatches = chunk.match(/https?:\/\/[^\s]+/g) || [];
+        const coverImage = urlMatches.find(u => u.includes('images.unsplash')) || null;
+        const videoUrl = urlMatches.find(u => u.includes('youtube')) || null;
 
-        // Clean out the URLs from the text
+        // Remove the URLs from the text so they don't become blocks
         chunk = chunk.replace(/https?:\/\/[^\s]+/g, '');
-        
-        // Parse lines
+        // Remove the text "VIDEO URL:" and "COVER IMAGE:"
+        chunk = chunk.replace(/VIDEO URL:/gi, '').replace(/COVER IMAGE:/gi, '');
+
         const lines = chunk.split('\n').map(l => l.trim()).filter(Boolean);
         let title = "Untitled Lesson";
         let blocks = [];
@@ -51,19 +48,20 @@ export default function BulkImporter() {
         for (let j = 0; j < lines.length; j++) {
           let line = lines[j];
 
-          if (j === 0 && line.length < 100) {
+          // The first line is usually the title, check if it's not a quiz/formula
+          if (j === 0 && !line.includes('[FORMULA]') && !line.match(/^Q\.\d+/)) {
             title = line;
             continue;
           }
 
-          // Formula
+          // FORMULA
           if (line.includes('[FORMULA]')) {
             const match = line.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
             if (match) blocks.push({ type: 'formula', content: match[1].trim() });
             continue;
           }
 
-          // Quizzes (Q.1)
+          // QUIZZES (Q.1, Q.2, etc)
           if (line.match(/^Q\.\d+/)) {
             let qText = line.replace(/^Q\.\d+:?\s*/, '');
             let options = [];
@@ -73,12 +71,14 @@ export default function BulkImporter() {
             let k = j + 1;
             while (k < lines.length && !lines[k].match(/^Q\.\d+/)) {
               let next = lines[k];
-              if (/^[A-D]\)/.test(next)) options.push(next.replace(/^[A-D]\)\s*/, ''));
-              else if (next.startsWith('Answer:')) {
+              if (/^[A-D]\)/.test(next)) {
+                options.push(next.replace(/^[A-D]\)\s*/, ''));
+              } else if (next.startsWith('Answer:')) {
                 const l = next.replace('Answer:', '').trim().toUpperCase();
                 answer = l === 'A' ? 0 : l === 'B' ? 1 : l === 'C' ? 2 : 3;
+              } else if (next.toLowerCase().startsWith('description:')) {
+                desc = next.replace(/description:/i, '').trim();
               }
-              else if (next.toLowerCase().startsWith('description:')) desc = next.replace(/description:/i, '').trim();
               k++;
             }
 
@@ -89,20 +89,20 @@ export default function BulkImporter() {
             continue;
           }
 
-          // Callouts (starts with >)
+          // CALLOUTS (Text starting with >)
           if (line.startsWith('>')) {
             blocks.push({ type: 'callout', content: line.replace(/^>\s*/, '').trim() });
             continue;
           }
 
-          // Headings (Heuristic: short lines with no periods)
-          if (line.length < 60 && !line.endsWith('.') && !line.includes('Answer:')) {
+          // HEADINGS (If line is short, doesn't end with a period, and isn't an answer)
+          if (line.length < 60 && !line.endsWith('.') && !line.includes('Answer:') && !line.includes('Description:')) {
             blocks.push({ type: 'heading', content: line, level: 2 });
             continue;
           }
 
-          // Normal Text
-          if (line.length > 5) {
+          // NORMAL TEXT
+          if (line.length > 3) {
             blocks.push({ type: 'text', content: line });
           }
         }
