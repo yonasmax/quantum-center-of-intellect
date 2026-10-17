@@ -21,81 +21,98 @@ export default function BulkImporter() {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.convertToHtml({ arrayBuffer });
-      
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(result.value, 'text/html');
-      
-      // Split into lessons based on H1 tags
-      const bodyElements = Array.from(doc.body.children);
-      let currentLessonElements = [];
-      const lessonsToProcess = [];
+      // Use extractRawText to get clean text without messy HTML
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      const text = result.value;
 
-      bodyElements.forEach(el => {
-        if (el.tagName === 'H1' && currentLessonElements.length > 0) {
-          lessonsToProcess.push(currentLessonElements);
-          currentLessonElements = [];
-        }
-        currentLessonElements.push(el);
-      });
-      if (currentLessonElements.length > 0) lessonsToProcess.push(currentLessonElements);
-
+      // Split by "COVER IMAGE:" or "COVER IMAGE" 
+      const lessonsRaw = text.split(/COVER IMAGE:/i).filter(chunk => chunk.trim().length > 0);
+      
       const lessonsData = [];
-      for (const lessonHtml of lessonsToProcess) {
+
+      for (let i = 0; i < lessonsRaw.length; i++) {
+        let chunk = lessonsRaw[i].trim();
+        
+        // Extract Cover Image & Video
+        const coverMatch = chunk.match(/https?:\/\/[^\s]+/);
+        const coverImage = coverMatch ? coverMatch[0] : null;
+        
+        const videoMatch = chunk.match(/https:\/\/www\.youtube\.com\/watch\?v=[^\s]+/);
+        const videoUrl = videoMatch ? videoMatch[0] : null;
+
+        // Clean out the URLs from the text
+        chunk = chunk.replace(/https?:\/\/[^\s]+/g, '');
+        
+        // Parse lines
+        const lines = chunk.split('\n').map(l => l.trim()).filter(Boolean);
         let title = "Untitled Lesson";
-        let coverImage = null;
-        let videoUrl = null;
         let blocks = [];
 
-        lessonHtml.forEach(el => {
-          const text = el.textContent.trim();
-          if (el.tagName === 'H1') title = text;
-          else if (text.startsWith('COVER IMAGE:')) coverImage = text.replace('COVER IMAGE:', '').trim();
-          else if (text.startsWith('VIDEO URL:')) videoUrl = text.replace('VIDEO URL:', '').trim();
-          else if (el.tagName === 'H2') blocks.push({ type: 'heading', content: text });
-          else if (el.tagName === 'P') {
-            if (text.includes('[FORMULA]')) {
-               const match = text.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
-               if (match) blocks.push({ type: 'formula', content: match[1].trim() });
-            } else if (text.length > 0 && !text.includes('COVER IMAGE') && !text.includes('VIDEO URL')) {
-               blocks.push({ type: 'text', content: text });
-            }
+        for (let j = 0; j < lines.length; j++) {
+          let line = lines[j];
+
+          if (j === 0 && line.length < 100) {
+            title = line;
+            continue;
           }
-          else if (el.tagName === 'DIV' && el.className.includes('quiz')) {
-            // Parse Quiz
-            const qText = el.querySelector('strong')?.textContent || '';
-            const lines = el.innerHTML.split('<br>');
+
+          // Formula
+          if (line.includes('[FORMULA]')) {
+            const match = line.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
+            if (match) blocks.push({ type: 'formula', content: match[1].trim() });
+            continue;
+          }
+
+          // Quizzes (Q.1)
+          if (line.match(/^Q\.\d+/)) {
+            let qText = line.replace(/^Q\.\d+:?\s*/, '');
             let options = [];
-            let answer = '';
+            let answer = 0;
             let desc = '';
             
-            lines.forEach(line => {
-              if (/^[A-D]\)/.test(line)) options.push(line.replace(/^[A-D]\)\s*/, '').replace(/<.*?>/g, ''));
-              else if (line.includes('Answer:')) answer = line.replace(/.*Answer:\s*/, '').replace(/<.*?>/g, '').trim();
-              else if (line.includes('Description:')) desc = line.replace(/.*Description:\s*/, '').replace(/<.*?>/g, '').trim();
-            });
-
-            if (qText && options.length > 0) {
-               blocks.push({ 
-                 type: 'quiz', 
-                 question: qText.replace('Answer:', '').trim(), 
-                 options, 
-                 correctAnswer: answer === 'A' ? 0 : answer === 'B' ? 1 : answer === 'C' ? 2 : 3, 
-                 explanation: desc 
-               });
+            let k = j + 1;
+            while (k < lines.length && !lines[k].match(/^Q\.\d+/)) {
+              let next = lines[k];
+              if (/^[A-D]\)/.test(next)) options.push(next.replace(/^[A-D]\)\s*/, ''));
+              else if (next.startsWith('Answer:')) {
+                const l = next.replace('Answer:', '').trim().toUpperCase();
+                answer = l === 'A' ? 0 : l === 'B' ? 1 : l === 'C' ? 2 : 3;
+              }
+              else if (next.toLowerCase().startsWith('description:')) desc = next.replace(/description:/i, '').trim();
+              k++;
             }
+
+            if (options.length > 0) {
+              blocks.push({ type: 'quiz', question: qText, options, correctAnswer: answer, explanation: desc });
+            }
+            j = k - 1;
+            continue;
           }
-          else if (el.tagName === 'DIV' && el.className.includes('callout')) {
-             blocks.push({ type: 'callout', content: el.textContent.replace('Key Takeaways:', '').trim() });
+
+          // Callouts (starts with >)
+          if (line.startsWith('>')) {
+            blocks.push({ type: 'callout', content: line.replace(/^>\s*/, '').trim() });
+            continue;
           }
-        });
+
+          // Headings (Heuristic: short lines with no periods)
+          if (line.length < 60 && !line.endsWith('.') && !line.includes('Answer:')) {
+            blocks.push({ type: 'heading', content: line, level: 2 });
+            continue;
+          }
+
+          // Normal Text
+          if (line.length > 5) {
+            blocks.push({ type: 'text', content: line });
+          }
+        }
 
         if (title !== "Untitled Lesson" && blocks.length > 0) {
-           lessonsData.push({ title, blocks, coverImage, videoUrl });
+          lessonsData.push({ title, blocks, coverImage, videoUrl });
         }
       }
 
-      if (lessonsData.length === 0) throw new Error('No lessons found. Make sure the document has <h1> tags.');
+      if (lessonsData.length === 0) throw new Error('No valid lessons found. Make sure the format is correct.');
       setParsedLessons(lessonsData);
     } catch (err) {
       setError('Failed to parse document: ' + err.message);
@@ -138,7 +155,7 @@ export default function BulkImporter() {
         <span>🚀</span> Bulk Import (Full Unit)
       </h3>
       <p className="text-sm text-[#2C5282] mb-4">
-        Upload a Word document containing multiple lessons. Each <strong>Heading 1</strong> will be split into a separate lesson automatically.
+        Upload a Word document. Each <strong>COVER IMAGE</strong> tag will be split into a separate lesson automatically.
       </p>
 
       {error && <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4 border border-red-200">{error}</div>}
