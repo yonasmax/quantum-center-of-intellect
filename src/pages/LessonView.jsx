@@ -39,11 +39,11 @@ export default function LessonView() {
     );
   }
 
-  // THE SAFETY NET: Check every possible key and format
+  // THE ULTIMATE SAFETY NET
   let blocks = lesson.content_blocks || lesson.contentBlocks || lesson.blocks || [];
   
   if (typeof blocks === 'string') {
-    try { blocks = JSON.parse(blocks); } catch (e) { console.error("Failed to parse blocks:", e); blocks = []; }
+    try { blocks = JSON.parse(blocks); } catch (e) { console.error("Parse error", e); blocks = []; }
   }
 
   if (!Array.isArray(blocks)) {
@@ -77,44 +77,45 @@ export default function LessonView() {
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
           
           {blocks.length === 0 && (
-            <p className="text-gray-500 text-center py-10">
-              No content blocks found. (Found keys: {Object.keys(lesson).join(', ')})
-            </p>
+            <p className="text-gray-500 text-center py-10">No content blocks found in the database.</p>
           )}
 
           {blocks.map((block, i) => {
             if (!block || !block.type) return null;
 
-            if (block.type === 'heading') {
-              return <h2 key={i} className="text-2xl font-bold text-[#1A365D] mt-8 mb-4 border-b pb-2">{block.content}</h2>;
+            switch (block.type) {
+              case 'heading':
+                return <h2 key={i} className="text-2xl font-bold text-[#1A365D] mt-8 mb-4 border-b pb-2">{block.content}</h2>;
+              
+              case 'text':
+                return <p key={i} className="text-gray-700 mb-4 leading-relaxed text-lg">{block.content}</p>;
+              
+              case 'formula':
+                return <div key={i} className="bg-gray-100 p-4 rounded-lg font-mono text-center mb-6 text-lg border border-gray-200 text-[#1A365D]">{block.content}</div>;
+              
+              case 'callout':
+                return <div key={i} className="bg-orange-50 border-l-4 border-[#ED8936] p-5 rounded-r-lg mb-6 text-sm text-gray-800 font-medium">{block.content}</div>;
+              
+              case 'quiz':
+                return (
+                  <div key={i} className="bg-blue-50 border border-blue-100 p-6 rounded-xl mb-6 shadow-sm">
+                    <p className="font-bold text-[#1A365D] mb-4 text-lg">{block.question}</p>
+                    <ul className="space-y-2">
+                      {block.options && block.options.map((opt, optIdx) => (
+                        <li key={optIdx} className="text-gray-700 bg-white p-3 rounded-lg border border-gray-200">
+                          <span className="font-bold mr-2">{String.fromCharCode(65 + optIdx)})</span> {opt}
+                        </li>
+                      ))}
+                    </ul>
+                    {block.explanation && (
+                      <p className="text-xs text-blue-600 mt-4 italic bg-blue-100 p-3 rounded">Explanation: {block.explanation}</p>
+                    )}
+                  </div>
+                );
+              
+              default:
+                return <div key={i} className="p-4 bg-red-100 text-red-700 rounded-lg mb-4">Unknown block type: {block.type}</div>;
             }
-            if (block.type === 'text') {
-              return <p key={i} className="text-gray-700 mb-4 leading-relaxed text-lg">{block.content}</p>;
-            }
-            if (block.type === 'formula') {
-              return <div key={i} className="bg-gray-100 p-4 rounded-lg font-mono text-center mb-6 text-lg border border-gray-200 text-[#1A365D]">{block.content}</div>;
-            }
-            if (block.type === 'callout') {
-              return <div key={i} className="bg-orange-50 border-l-4 border-[#ED8936] p-5 rounded-r-lg mb-6 text-sm text-gray-800 font-medium">{block.content}</div>;
-            }
-            if (block.type === 'quiz') {
-              return (
-                <div key={i} className="bg-blue-50 border border-blue-100 p-6 rounded-xl mb-6 shadow-sm">
-                  <p className="font-bold text-[#1A365D] mb-4 text-lg">{block.question}</p>
-                  <ul className="space-y-2">
-                    {block.options && block.options.map((opt, optIdx) => (
-                      <li key={optIdx} className="text-gray-700 bg-white p-3 rounded-lg border border-gray-200">
-                        <span className="font-bold mr-2">{String.fromCharCode(65 + optIdx)})</span> {opt}
-                      </li>
-                    ))}
-                  </ul>
-                  {block.explanation && (
-                    <p className="text-xs text-blue-600 mt-4 italic bg-blue-100 p-3 rounded">Explanation: {block.explanation}</p>
-                  )}
-                </div>
-              );
-            }
-            return null;
           })}
         </div>
       </div>
