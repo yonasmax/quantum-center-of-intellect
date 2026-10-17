@@ -41,6 +41,7 @@ function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/dashboard" element={<Home />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/exam-room" element={<ExamRoom />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -99,6 +100,7 @@ function App() {
 }
 
 export default App;
+
 
 
 

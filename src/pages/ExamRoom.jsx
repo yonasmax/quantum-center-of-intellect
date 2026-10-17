@@ -26,7 +26,7 @@ export default function ExamRoom() {
     const enterFullScreen = async () => {
       try {
         if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen();
+          await document.documentElement.requestFullscreen().catch(e => console.warn('Fullscreen blocked by browser:', e));
         }
       } catch (err) {
         console.warn("Fullscreen request failed", err);
@@ -128,3 +128,4 @@ export default function ExamRoom() {
     </div>
   );
 }
+
