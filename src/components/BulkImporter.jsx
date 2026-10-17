@@ -19,90 +19,110 @@ export default function BulkImporter() {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      const text = result.value;
+      // Convert to HTML so we can read the tags (H1, P, DIV) properly
+      const result = await mammoth.convertToHtml({ arrayBuffer });
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(result.value, 'text/html');
+      
+      // Get all elements in order
+      const elements = Array.from(doc.body.children);
+      let lessonsData = [];
+      let currentLesson = null;
 
-      // Split the document by the literal string "COVER IMAGE:"
-      const chunks = text.split(/COVER IMAGE:/i).filter(c => c.trim().length > 0);
-      const lessonsData = [];
+      for (let i = 0; i < elements.length; i++) {
+        const el = elements[i];
+        const text = el.textContent.trim();
 
-      for (let chunk of chunks) {
-        chunk = chunk.trim();
-        
-        // 1. Get Cover Image
-        const coverMatch = chunk.match(/^\s*(https?:\/\/[^\s]+)/i);
-        const coverImage = coverMatch ? coverMatch[1] : null;
-        if (coverMatch) chunk = chunk.replace(coverMatch[0], '');
-
-        // 2. Get Video URL
-        const videoMatch = chunk.match(/VIDEO URL:\s*(https?:\/\/[^\s]+)/i);
-        const videoUrl = videoMatch ? videoMatch[1] : null;
-        if (videoMatch) chunk = chunk.replace(videoMatch[0], '');
-
-        // 3. Extract Title (first non-empty line)
-        const lines = chunk.split('\n').map(l => l.trim()).filter(Boolean);
-        let title = "Untitled Lesson";
-        if (lines.length > 0) {
-          title = lines.shift(); // Take the first line as title
-        }
-
-        let blocks = [];
-        for (let j = 0; j < lines.length; j++) {
-          let line = lines[j];
-
-          // Formula
-          if (line.includes('[FORMULA]')) {
-            const match = line.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
-            if (match) blocks.push({ type: 'formula', content: match[1].trim() });
+        // Start a new lesson when we see a "COVER IMAGE" text or an H1
+        if (text.includes('COVER IMAGE:') || (el.tagName === 'H1' && currentLesson === null)) {
+          if (currentLesson) lessonsData.push(currentLesson);
+          
+          currentLesson = {
+            title: "Untitled Lesson",
+            coverImage: null,
+            videoUrl: null,
+            blocks: []
+          };
+          
+          if (text.includes('COVER IMAGE:')) {
+            const urlMatch = text.match(/https?:\/\/[^\s]+/);
+            if (urlMatch) currentLesson.coverImage = urlMatch[0];
             continue;
           }
+        }
 
-          // Quizzes
-          if (line.match(/^Q\.\d+/)) {
-            let qText = line.replace(/^Q\.\d+:?\s*/, '');
-            let options = [];
-            let answer = 0;
-            let desc = '';
-            
-            let k = j + 1;
-            while (k < lines.length && !lines[k].match(/^Q\.\d+/)) {
-              let next = lines[k];
-              if (/^[A-D]\)/.test(next)) options.push(next.replace(/^[A-D]\)\s*/, ''));
-              else if (next.startsWith('Answer:')) {
-                const l = next.replace('Answer:', '').trim().toUpperCase();
-                answer = l === 'A' ? 0 : l === 'B' ? 1 : l === 'C' ? 2 : 3;
-              }
-              else if (next.toLowerCase().startsWith('description:')) desc = next.replace(/description:/i, '').trim();
-              k++;
+        if (!currentLesson) continue;
+
+        if (text.startsWith('VIDEO URL:')) {
+          const urlMatch = text.match(/https?:\/\/[^\s]+/);
+          if (urlMatch) currentLesson.videoUrl = urlMatch[0];
+          continue;
+        }
+
+        // If it's a Title (H1)
+        if (el.tagName === 'H1') {
+          currentLesson.title = text.replace(/COVER IMAGE:.*/, '').trim();
+          continue;
+        }
+
+        // Formulas
+        if (text.includes('[FORMULA]')) {
+          const match = text.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
+          if (match) currentLesson.blocks.push({ type: 'formula', content: match[1].trim() });
+          continue;
+        }
+
+        // Quizzes (Q.1 or Q.2)
+        if (text.match(/Q\.\d+/)) {
+          let qText = "";
+          let options = [];
+          let answer = 0;
+          let desc = "";
+          
+          // We look inside this element for the quiz details
+          const innerText = el.innerText || el.textContent;
+          const lines = innerText.split('\n').map(l => l.trim()).filter(Boolean);
+          
+          lines.forEach(line => {
+            if (line.match(/Q\.\d+/)) qText = line.replace(/^Q\.\d+:?\s*/, '');
+            else if (/^[A-D]\)/.test(line)) options.push(line.replace(/^[A-D]\)\s*/, ''));
+            else if (line.startsWith('Answer:')) {
+              const l = line.replace('Answer:', '').trim().toUpperCase();
+              answer = l === 'A' ? 0 : l === 'B' ? 1 : l === 'C' ? 2 : 3;
             }
+            else if (line.toLowerCase().startsWith('description:')) desc = line.replace(/description:/i, '').trim();
+          });
 
-            if (options.length > 0) blocks.push({ type: 'quiz', question: qText, options, correctAnswer: answer, explanation: desc });
-            j = k - 1;
-            continue;
+          if (qText && options.length > 0) {
+            currentLesson.blocks.push({ type: 'quiz', question: qText, options, correctAnswer: answer, explanation: desc });
           }
-
-          // Callouts
-          if (line.startsWith('>')) {
-            blocks.push({ type: 'callout', content: line.replace(/^>\s*/, '').trim() });
-            continue;
-          }
-
-          // Headings (Shorter lines without periods)
-          if (line.length < 60 && !line.endsWith('.') && !line.includes('Answer:')) {
-            blocks.push({ type: 'heading', content: line, level: 2 });
-            continue;
-          }
-
-          // Text
-          if (line.length > 3) blocks.push({ type: 'text', content: line });
+          continue;
         }
 
-        if (title !== "Untitled Lesson" && blocks.length > 0) {
-          lessonsData.push({ title, blocks, coverImage, videoUrl });
+        // Callouts
+        if (text.startsWith('>')) {
+          currentLesson.blocks.push({ type: 'callout', content: text.replace(/^>\s*/, '').trim() });
+          continue;
+        }
+
+        // Headings (H2, H3)
+        if (el.tagName === 'H2' || el.tagName === 'H3') {
+          currentLesson.blocks.push({ type: 'heading', content: text });
+          continue;
+        }
+
+        // Normal Text
+        if (text.length > 5 && el.tagName === 'P') {
+          currentLesson.blocks.push({ type: 'text', content: text });
         }
       }
 
-      if (lessonsData.length === 0) throw new Error('No valid lessons found. Check the document format.');
+      if (currentLesson) lessonsData.push(currentLesson);
+
+      // Clean up empty/broken lessons
+      lessonsData = lessonsData.filter(l => l.title !== "Untitled Lesson" && l.blocks.length > 0);
+
+      if (lessonsData.length === 0) throw new Error('No valid lessons found. Check the format.');
       setParsedLessons(lessonsData);
     } catch (err) {
       setError('Failed to parse document: ' + err.message);
