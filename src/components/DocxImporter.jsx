@@ -138,8 +138,7 @@ export default function DocxImporter({ onImport }) {
             <button
               onClick={confirmImport}
 disabled={!preview || !preview.blocks || preview.blocks.length === 0}
-className="bg-[#ED8936] hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50"
-              className="bg-[#ED8936] hover:bg-orange-500 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-sm"
+className="bg-[#ED8936] hover:bg-orange-500 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-sm"
             >
               Confirm Import
             </button>
@@ -163,4 +162,5 @@ className="bg-[#ED8936] hover:bg-orange-500 text-white px-4 py-2 rounded-lg text
     </div>
   );
 }
+
 
