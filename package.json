@@ -19,6 +19,7 @@
     "jspdf": "^4.2.1",
     "katex": "^0.16.11",
     "lottie-react": "^2.4.0",
+    "mammoth": "^1.13.0",
     "papaparse": "^5.4.1",
     "prop-types": "^15.8.1",
     "react": "^18.3.1",

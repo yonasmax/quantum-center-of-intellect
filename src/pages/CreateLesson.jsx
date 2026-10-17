@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
+import DocxImporter from '../components/DocxImporter';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { saveLesson, getLesson } from '../services/lessonsAPI';
@@ -121,6 +122,13 @@ export default function CreateLesson() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
         <p className="text-[#1A365D] font-bold">Loading lesson...</p>
       </div>
     );
@@ -128,8 +136,22 @@ export default function CreateLesson() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
       <header className="bg-[#1A365D] text-white p-6 shadow-lg">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
           <div>
             <h1 className="text-2xl font-bold">{isEditing ? 'Edit Lesson' : 'Create New Lesson'}</h1>
             <p className="text-sm opacity-80 mt-1">
@@ -143,8 +165,22 @@ export default function CreateLesson() {
       </header>
 
       <div className="max-w-4xl mx-auto p-6">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg mb-4">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
             {success}
           </div>
         )}
@@ -152,12 +188,26 @@ export default function CreateLesson() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
               {error}
             </div>
           )}
 
           {/* BASIC INFO */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
             <h2 className="font-bold text-[#1A365D] text-lg">Basic Information</h2>
 
             <div>
@@ -173,6 +223,13 @@ export default function CreateLesson() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
               <div>
                 <label className="text-sm font-bold text-gray-700 block mb-2">Subject *</label>
                 <select
@@ -200,6 +257,13 @@ export default function CreateLesson() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
               <div>
                 <label className="text-sm font-bold text-gray-700 block mb-2">Lesson Number</label>
                 <input
@@ -225,6 +289,13 @@ export default function CreateLesson() {
 
           {/* OBJECTIVES */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
             <h2 className="font-bold text-[#1A365D] text-lg">Learning Objectives</h2>
 
             <div>
@@ -254,6 +325,13 @@ export default function CreateLesson() {
 
           {/* CONTENT BLOCKS */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
             <div>
               <h2 className="font-bold text-[#1A365D] text-lg">Lesson Content</h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -265,6 +343,13 @@ export default function CreateLesson() {
 
           {/* MEDIA */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
             <h2 className="font-bold text-[#1A365D] text-lg">Media (optional)</h2>
 
             <div>
@@ -292,6 +377,13 @@ export default function CreateLesson() {
 
           {/* TAKEAWAYS */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
             <h2 className="font-bold text-[#1A365D] text-lg">Key Takeaways</h2>
             <div>
               <label className="text-sm font-bold text-gray-700 block mb-2">
@@ -309,6 +401,13 @@ export default function CreateLesson() {
 
           {/* PUBLISH */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
             <h2 className="font-bold text-[#1A365D] text-lg mb-4">Publish</h2>
             <label className="flex items-center gap-3 cursor-pointer">
               <input
@@ -328,6 +427,13 @@ export default function CreateLesson() {
 
           {/* ACTIONS */}
           <div className="flex gap-3 justify-end">
+      <div className="mb-6">
+        <DocxImporter onImport={(blocks) => {
+          // Assuming you have a state setter for blocks, e.g., setBlocks(blocks)
+          console.log('Imported blocks:', blocks);
+          if (typeof setBlocks === 'function') setBlocks(blocks);
+        }} />
+      </div>
             <button
               type="button"
               onClick={() => navigate('/teacher')}
@@ -354,3 +460,4 @@ export default function CreateLesson() {
     </div>
   );
 }
+
