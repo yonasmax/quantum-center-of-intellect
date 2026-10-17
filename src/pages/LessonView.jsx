@@ -46,9 +46,9 @@ export default function LessonView() {
     try { blocks = JSON.parse(blocks); } catch (e) { console.error("Parse error", e); blocks = []; }
   }
 
-  if (!Array.isArray(blocks)) {
-    blocks = [];
-  }
+  if (!Array.isArray(blocks)) { blocks = []; }
+  console.log('=== BLOCKS LOADED ===');
+  console.log(blocks);
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] pb-20">
@@ -122,3 +122,4 @@ export default function LessonView() {
     </div>
   );
 }
+

@@ -3,7 +3,6 @@
 export const saveLesson = async (lessonData) => {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
-  
   if (!user) throw new Error('You must be logged in to save lessons');
 
   const payload = {
@@ -24,53 +23,34 @@ export const saveLesson = async (lessonData) => {
   };
 
   if (lessonData.lesson_id) {
-    // Update existing
-    const { data, error } = await supabase
-      .from('lessons')
-      .update(payload)
-      .eq('lesson_id', lessonData.lesson_id)
-      .select()
-      .single();
+    const { data, error } = await supabase.from('lessons').update(payload).eq('lesson_id', lessonData.lesson_id).select().single();
     if (error) throw error;
     return { data: { lesson: data } };
   } else {
-    // Insert new - lesson_id will auto-generate UUID
-    const { data, error } = await supabase
-      .from('lessons')
-      .insert([payload])
-      .select()
-      .single();
+    const { data, error } = await supabase.from('lessons').insert([payload]).select().single();
     if (error) throw error;
     return { data: { lesson: data } };
   }
 };
 
 export const getLesson = async (id) => {
-  const { data, error } = await supabase
-    .from('lessons')
-    .select('*')
-    .eq('lesson_id', id)
-    .single();
+  const { data, error } = await supabase.from('lessons').select('*').eq('lesson_id', id);
   
   if (error) throw error;
-  return { data: { lesson: data } };
+  if (!data || data.length === 0) throw new Error('Lesson not found');
+  
+  // FIX: Force it to return the first object, not the array
+  return { data: { lesson: data[0] } }; 
 };
 
 export const getLessons = async () => {
-  const { data, error } = await supabase
-    .from('lessons')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('lessons').select('*').order('created_at', { ascending: false });
   if (error) throw error;
   return { data: { lessons: data } };
 };
 
 export const getMyLessons = async () => {
-  const { data, error } = await supabase
-    .from('lessons')
-    .select('*')
-    .order('created_at', { ascending: false });
-    
+  const { data, error } = await supabase.from('lessons').select('*').order('created_at', { ascending: false });
   if (error) throw error;
   return { data: { lessons: data || [] } };
 };
