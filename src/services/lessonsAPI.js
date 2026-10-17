@@ -1,85 +1,72 @@
-// src/services/lessonsAPI.js
-// Teacher lesson management API
-import { supabase } from '../supabaseClient';
-
-async function getToken() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.access_token || null;
-}
-
-async function getCurrentEmail() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.email || null;
-}
+﻿import { supabase } from '../supabaseClient';
 
 export const saveLesson = async (lessonData) => {
-  const token = await getToken();
-  if (!token) throw new Error('Not authenticated');
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+  
+  if (!user) throw new Error('You must be logged in to save lessons');
 
-  const res = await fetch('/api/teacher/save-lesson', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(lessonData),
-  });
+  const payload = {
+    title: lessonData.title,
+    subject: lessonData.subject,
+    grade: lessonData.grade,
+    lesson_number: lessonData.lesson_number || null,
+    duration: lessonData.duration || 45,
+    objectives: lessonData.objectives || [],
+    competence: lessonData.competence || '',
+    content_blocks: lessonData.content_blocks || [], // Make sure blocks are passed
+    cover_image_url: lessonData.cover_image_url || null,
+    video_url: lessonData.video_url || null,
+    takeaways: lessonData.takeaways || [],
+    is_published: lessonData.is_published !== undefined ? lessonData.is_published : true,
+    teacher_id: user.id,
+    updated_at: new Date().toISOString(),
+  };
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to save lesson');
-  return { data: { success: true, lesson: data.lesson } };
-};
-
-export const deleteLesson = async (lessonId) => {
-  const token = await getToken();
-  if (!token) throw new Error('Not authenticated');
-
-  const res = await fetch('/api/teacher/delete-lesson', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ lesson_id: lessonId }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to delete lesson');
-  return { data: { success: true } };
-};
-
-export const getMyLessons = async () => {
-  const email = await getCurrentEmail();
-  console.log('[lessons] getMyLessons for:', email);
-  if (!email) return { data: { success: true, lessons: [] } };
-
-  const { data, error } = await supabase
-    .from('lessons')
-    .select('*')
-    .eq('teacher_id', email)
-    .order('updated_at', { ascending: false });
-
-  if (error) {
-    console.error('[lessons] getMyLessons error:', error);
-    throw error;
+  if (lessonData.lesson_id) {
+    // Update existing
+    const { data, error } = await supabase
+      .from('lessons')
+      .update(payload)
+      .eq('id', lessonData.lesson_id)
+      .select()
+      .single();
+    if (error) throw error;
+    return { data: { lesson: data } };
+  } else {
+    // Insert new
+    const { data, error } = await supabase
+      .from('lessons')
+      .insert([payload])
+      .select()
+      .single();
+    if (error) throw error;
+    return { data: { lesson: data } };
   }
-  console.log('[lessons] Found', data?.length || 0, 'lessons for', email);
-  return { data: { success: true, lessons: data || [] } };
 };
 
-export const getLesson = async (lessonId) => {
+export const getLesson = async (id) => {
   const { data, error } = await supabase
     .from('lessons')
     .select('*')
-    .eq('lesson_id', lessonId)
-    .maybeSingle();
+    .eq('id', id)
+    .single();
+  
   if (error) throw error;
-  return { data: { success: true, lesson: data } };
+  return { data: { lesson: data } };
 };
 
-export const getPublishedLessons = async (subject, grade) => {
-  let query = supabase
+export const getLessons = async () => {
+  const { data, error } = await supabase
     .from('lessons')
     .select('*')
-    .eq('is_published', true)
-    .order('updated_at', { ascending: false });
-  if (subject) query = query.eq('subject', subject);
-  if (grade) query = query.eq('grade', grade);
-  const { data, error } = await query;
+    .order('created_at', { ascending: false });
   if (error) throw error;
-  return { data: { success: true, lessons: data || [] } };
+  return { data: { lessons: data } };
+};
+
+export const deleteLesson = async (id) => {
+  const { error } = await supabase.from('lessons').delete().eq('id', id);
+  if (error) throw error;
+  return { success: true };
 };
