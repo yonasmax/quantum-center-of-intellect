@@ -1,16 +1,16 @@
 ﻿import React, { useState, useEffect } from 'react';
-import DocxImporter from '../components/DocxImporter';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { saveLesson, getLesson } from '../services/lessonsAPI';
 import ContentBlockEditor from '../components/ContentBlockEditor';
+import DocxImporter from '../components/DocxImporter';
 
 const SUBJECTS = ['Chemistry', 'Physics', 'Biology', 'Math', 'English', 'History', 'Geography'];
 const GRADES = ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
 export default function CreateLesson() {
   const navigate = useNavigate();
-  const { lessonId } = useParams();  // present when editing
+  const { lessonId } = useParams();
   const { user } = useAuth();
   const isEditing = !!lessonId;
 
@@ -122,7 +122,6 @@ export default function CreateLesson() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
-      
         <p className="text-[#1A365D] font-bold">Loading lesson...</p>
       </div>
     );
@@ -130,10 +129,8 @@ export default function CreateLesson() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
-      
       <header className="bg-[#1A365D] text-white p-6 shadow-lg">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-      
           <div>
             <h1 className="text-2xl font-bold">{isEditing ? 'Edit Lesson' : 'Create New Lesson'}</h1>
             <p className="text-sm opacity-80 mt-1">
@@ -146,11 +143,15 @@ export default function CreateLesson() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto p-6">
-      
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        
+        {/* DOCX IMPORTER - ONLY ONE AT THE TOP */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-t-4 border-t-[#ED8936]">
+          <DocxImporter onImport={(blocks) => setContentBlocks(blocks)} />
+        </div>
+
         {success && (
-          <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg mb-4">
-      
+          <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg">
             {success}
           </div>
         )}
@@ -158,14 +159,12 @@ export default function CreateLesson() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-      
               {error}
             </div>
           )}
 
           {/* BASIC INFO */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-      
             <h2 className="font-bold text-[#1A365D] text-lg">Basic Information</h2>
 
             <div>
@@ -181,7 +180,6 @@ export default function CreateLesson() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-      
               <div>
                 <label className="text-sm font-bold text-gray-700 block mb-2">Subject *</label>
                 <select
@@ -209,7 +207,6 @@ export default function CreateLesson() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-      
               <div>
                 <label className="text-sm font-bold text-gray-700 block mb-2">Lesson Number</label>
                 <input
@@ -235,7 +232,6 @@ export default function CreateLesson() {
 
           {/* OBJECTIVES */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-      
             <h2 className="font-bold text-[#1A365D] text-lg">Learning Objectives</h2>
 
             <div>
@@ -265,7 +261,6 @@ export default function CreateLesson() {
 
           {/* CONTENT BLOCKS */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-      
             <div>
               <h2 className="font-bold text-[#1A365D] text-lg">Lesson Content</h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -277,7 +272,6 @@ export default function CreateLesson() {
 
           {/* MEDIA */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-      
             <h2 className="font-bold text-[#1A365D] text-lg">Media (optional)</h2>
 
             <div>
@@ -305,7 +299,6 @@ export default function CreateLesson() {
 
           {/* TAKEAWAYS */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-      
             <h2 className="font-bold text-[#1A365D] text-lg">Key Takeaways</h2>
             <div>
               <label className="text-sm font-bold text-gray-700 block mb-2">
@@ -323,7 +316,6 @@ export default function CreateLesson() {
 
           {/* PUBLISH */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      
             <h2 className="font-bold text-[#1A365D] text-lg mb-4">Publish</h2>
             <label className="flex items-center gap-3 cursor-pointer">
               <input
@@ -343,7 +335,6 @@ export default function CreateLesson() {
 
           {/* ACTIONS */}
           <div className="flex gap-3 justify-end">
-      
             <button
               type="button"
               onClick={() => navigate('/teacher')}
@@ -370,5 +361,3 @@ export default function CreateLesson() {
     </div>
   );
 }
-
-
