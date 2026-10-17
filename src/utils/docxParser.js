@@ -22,7 +22,9 @@ export async function parseDocxToBlocks(file) {
         for (let i = 0; i < elements.length; i++) {
           const el = elements[i];
           let text = el.textContent.trim();
-          if (!text) continue;
+          
+          // IGNORE EMPTY BLOCKS
+          if (!text && el.tagName !== 'TABLE' && el.tagName !== 'IMG') continue;
 
           if (text.startsWith('COVER IMAGE:')) {
             coverImage = text.replace('COVER IMAGE:', '').trim();
@@ -45,22 +47,35 @@ export async function parseDocxToBlocks(file) {
               blocks.push({ type: 'formula', content: match[1].trim() });
             }
           } else if (text.startsWith('>')) {
-             const cleanText = text.replace(/^>\s*/, '').replace(/Key Takeaway/i, '').trim();
-             blocks.push({ type: 'callout', content: cleanText });
+             // Group all sequential ">" lines into one callout
+             let calloutText = text.replace(/^>\s*/, '').replace(/Key Takeaway/i, '').trim();
+             
+             // Look ahead to see if next items are also part of the callout
+             let j = i + 1;
+             while (j < elements.length) {
+                 let nextText = elements[j].textContent.trim();
+                 if (nextText.startsWith('-') || nextText.startsWith('>') || (nextText.length > 0 && !nextText.startsWith('Q.'))) {
+                    // If it's a bullet point or continuation
+                    calloutText += '\n' + nextText.replace(/^[-•>]\s*/, '').trim();
+                    j++;
+                 } else {
+                    break;
+                 }
+             }
+             blocks.push({ type: 'callout', content: calloutText });
+             i = j - 1; // Skip the elements we just grouped
+             
           } else if (el.tagName === 'UL' || el.tagName === 'OL') {
-            const items = Array.from(el.querySelectorAll('li')).map(li => li.textContent.trim());
-            blocks.push({ type: 'list', items, ordered: el.tagName === 'OL' });
+            const items = Array.from(el.querySelectorAll('li')).map(li => li.textContent.trim()).filter(Boolean);
+            if (items.length > 0) blocks.push({ type: 'list', items, ordered: el.tagName === 'OL' });
           } else if (el.tagName === 'TABLE') {
             const rows = Array.from(el.querySelectorAll('tr')).map(tr => 
               Array.from(tr.querySelectorAll('th, td')).map(td => td.textContent.trim())
-            );
-            if (rows.length > 0) {
-              blocks.push({ type: 'table', rows });
-            }
+            ).filter(r => r.some(c => c));
+            if (rows.length > 0) blocks.push({ type: 'table', rows });
           } else if (el.tagName === 'IMG' || text.includes('Uploaded Image')) {
              blocks.push({ type: 'text', content: '[Image Placeholder: Upload your graph/figure below]' });
           } else if (text.includes('Q.')) {
-             // Instead of parsing the DOM, we parse the raw inner text of this specific element
              const lines = el.innerText.split('\n').map(l => l.trim()).filter(Boolean);
              let questionText = '';
              let choices = [];
@@ -103,6 +118,12 @@ export async function parseDocxToBlocks(file) {
             }
           }
         }
+
+        // Final pass to remove any accidental empty text blocks
+        blocks = blocks.filter(b => {
+           if (b.type === 'text' && !b.content) return false;
+           return true;
+        });
 
         resolve({ blocks, coverImage, videoUrl });
       } catch (err) {
