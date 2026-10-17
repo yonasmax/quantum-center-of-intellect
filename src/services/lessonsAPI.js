@@ -80,9 +80,10 @@ export const getMyLessons = async () => {
   const { data, error } = await supabase
     .from('lessons')
     .select('*')
-    .eq('teacher_id', user.id)
+    
     .order('created_at', { ascending: false });
     
   if (error) throw error;
   return { data: { lessons: data || [] } };
 };
+

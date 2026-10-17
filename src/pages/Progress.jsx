@@ -7,22 +7,32 @@ import { useAchievements } from '../context/AchievementsContext';
 
 export default function Progress() {
   const { user, isAuthenticated } = useAuth();
-  const { progressMap, stats, loading, loadProgress } = useProgress();
-  const { unlocked, allAchievements, checkAndUnlock } = useAchievements();
+  const { progressMap = {}, stats = {}, loading, loadProgress } = useProgress();
+  const { unlocked = [], allAchievements = [], checkAndUnlock } = useAchievements();
 
   React.useEffect(() => {
-    if (stats.totalCompleted > 0) {
-      const subjectsStarted = new Set(
-        Object.values(progressMap).filter(p => p.completed).map(p => p.lesson?.subject).filter(Boolean)
-      ).size;
-      checkAndUnlock({ ...stats, subjectsStarted, currentStreak: 1 });
+    try {
+      if (stats && stats.totalCompleted > 0 && checkAndUnlock) {
+        const subjectsStarted = new Set(
+          Object.values(progressMap || {})
+            .filter(p => p && p.completed)
+            .map(p => p.lesson && p.lesson.subject)
+            .filter(Boolean)
+        ).size;
+        checkAndUnlock({ ...stats, subjectsStarted, currentStreak: 1 });
+      }
+    } catch (e) {
+      console.warn("Achievement check skipped:", e);
     }
-  }, [stats.totalCompleted, progressMap, checkAndUnlock]);
+  }, [stats?.totalCompleted, progressMap, checkAndUnlock]);
 
+  // Safely group by subject
   const bySubject = useMemo(() => {
     const groups = {};
+    if (!progressMap) return groups;
+    
     Object.values(progressMap).forEach((p) => {
-      const lesson = p.lesson;
+      const lesson = p && p.lesson;
       if (!lesson) return;
       const subject = lesson.subject || 'Other';
       if (!groups[subject]) groups[subject] = { completed: 0, total: 0 };
@@ -34,22 +44,24 @@ export default function Progress() {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  // Compute real weekly activity based on progress timestamps
+  // Safely compute weekly activity
   const weeklyActivity = useMemo(() => {
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const today = new Date();
     const counts = [0, 0, 0, 0, 0, 0, 0];
 
-    Object.values(progressMap).forEach((p) => {
-      if (!p.completedAt && !p.lastAccessedAt) return;
-      const date = new Date(p.completedAt || p.lastAccessedAt);
-      const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
-      if (diffDays >= 0 && diffDays < 7) {
-        const dayIndex = (today.getDay() - diffDays + 7) % 7;
-        const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1; // Monday-first
-        counts[adjustedIndex] += 1;
-      }
-    });
+    if (progressMap) {
+      Object.values(progressMap).forEach((p) => {
+        if (!p || (!p.completedAt && !p.lastAccessedAt)) return;
+        const date = new Date(p.completedAt || p.lastAccessedAt);
+        const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays < 7) {
+          const dayIndex = (today.getDay() - diffDays + 7) % 7;
+          const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1;
+          counts[adjustedIndex] += 1;
+        }
+      });
+    }
 
     const max = Math.max(...counts, 1);
     return days.map((d, i) => ({
@@ -81,11 +93,11 @@ export default function Progress() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
             <p className="text-xs text-gray-500 font-medium uppercase">Completed</p>
-            <p className="text-3xl font-bold text-[#1A365D] mt-1">{stats.totalCompleted}</p>
+            <p className="text-3xl font-bold text-[#1A365D] mt-1">{stats?.totalCompleted || 0}</p>
           </div>
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
             <p className="text-xs text-gray-500 font-medium uppercase">Time Learned</p>
-            <p className="text-3xl font-bold text-[#1A365D] mt-1">{stats.totalTimeHours}h</p>
+            <p className="text-3xl font-bold text-[#1A365D] mt-1">{stats?.totalTimeHours || 0}h</p>
           </div>
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
             <p className="text-xs text-gray-500 font-medium uppercase">Subjects</p>
@@ -143,7 +155,7 @@ export default function Progress() {
             </Link>
           </div>
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
-            {allAchievements.map((a) => {
+            {allAchievements && allAchievements.map((a) => {
               const isUnlocked = unlocked.includes(a.id);
               return (
                 <div
