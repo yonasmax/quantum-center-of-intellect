@@ -7,28 +7,25 @@ export async function parseDocxToBlocks(file) {
     reader.onload = async (e) => {
       try {
         const arrayBuffer = e.target.result;
-        const result = await mammoth.convertToHtml({ arrayBuffer });
-        let html = result.value;
-
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
         
+        // 1. Extract raw text directly
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        const text = result.value;
+
         let blocks = [];
         let coverImage = null;
         let videoUrl = null;
         
-        // Get all text first to process line-by-line
-        const textContent = doc.body.innerText || doc.body.textContent || "";
-        const lines = textContent.split('\n').map(l => l.trim()).filter(Boolean);
+        // 2. Split into lines and process
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
         let currentQuiz = null;
-        let currentList = null;
 
         for (let i = 0; i < lines.length; i++) {
           let line = lines[i];
           if (line.includes('TEACHER INSTRUCTIONS') || line.includes('The parser uses these exact tags')) continue;
 
-          // 1. Cover & Video
+          // Cover & Video
           if (line.startsWith('COVER IMAGE:')) {
             coverImage = line.replace('COVER IMAGE:', '').trim();
             continue;
@@ -38,19 +35,20 @@ export async function parseDocxToBlocks(file) {
             continue;
           }
 
-          // 2. Formulas
+          // Formulas
           if (line.includes('[FORMULA]')) {
             const match = line.match(/\[FORMULA\](.*?)\[\/FORMULA\]/s);
             if (match) blocks.push({ type: 'formula', content: match[1].trim() });
             continue;
           }
 
-          // 3. Quizzes
-          if (line.startsWith('Q.') || line.match(/^Q\.\d+:/)) {
-            if (currentQuiz) blocks.push(currentQuiz); // push previous quiz
+          // Quizzes
+          if (line.match(/^Q\.\d+:/) || line.startsWith('Q.')) {
+            if (currentQuiz) blocks.push(currentQuiz); 
             currentQuiz = { type: 'quiz', question: line.replace(/^Q\.\d+:?\s*/, ''), options: [], correctAnswer: 0, explanation: '' };
             continue;
           }
+          
           if (currentQuiz) {
             if (/^[A-Z]\)/.test(line)) {
               currentQuiz.options.push(line.replace(/^[A-Z]\)\s*/, ''));
@@ -62,40 +60,39 @@ export async function parseDocxToBlocks(file) {
             } else if (line.toLowerCase().startsWith('description:')) {
               currentQuiz.explanation = line.replace(/description:/i, '').trim();
               blocks.push(currentQuiz);
-              currentQuiz = null; // Quiz is done
+              currentQuiz = null; 
               continue;
             }
           }
 
-          // 4. Callouts
+          // Callouts
           if (line.startsWith('>')) {
             blocks.push({ type: 'callout', content: line.replace(/^>\s*/, '').trim() });
             continue;
           }
 
-          // 5. Headings
-          if (line.length < 60 && (line.match(/^\d\./) || line.match(/^#/))) {
-            // Fallback for headings based on numbers
-            blocks.push({ type: 'heading', content: line.replace(/^#+\s*/, ''), level: 2 });
-            continue;
-          }
-
-          // 6. Lists
+          // Lists
           if (line.startsWith('-') || line.startsWith('•')) {
-            if (!currentList) currentList = { type: 'list', items: [], ordered: false };
-            currentList.items.push(line.replace(/^[-•]\s*/, ''));
+            // If the previous block is a list, add to it, otherwise create a new one
+            if (blocks.length > 0 && blocks[blocks.length - 1].type === 'list') {
+              blocks[blocks.length - 1].items.push(line.replace(/^[-•]\s*/, ''));
+            } else {
+              blocks.push({ type: 'list', items: [line.replace(/^[-•]\s*/, '')], ordered: false });
+            }
             continue;
-          } else if (currentList) {
-            blocks.push(currentList);
-            currentList = null;
           }
 
-          // 7. Normal Text
+          // Headings (Heuristics)
+          if (line.length < 60 && (line.match(/^\d\./) || line.match(/^[A-Z][a-z]+( [A-Z][a-z]+)*$/) && !line.endsWith('.'))) {
+            blocks.push({ type: 'heading', content: line, level: 2 });
+            continue;
+          }
+
+          // Normal Text
           blocks.push({ type: 'text', content: line });
         }
         
         if (currentQuiz) blocks.push(currentQuiz);
-        if (currentList) blocks.push(currentList);
 
         resolve({ blocks, coverImage, videoUrl });
       } catch (err) {
