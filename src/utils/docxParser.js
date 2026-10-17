@@ -19,14 +19,13 @@ export async function parseDocxToBlocks(file) {
         
         // We will parse blocks and extract meta info
         const elements = Array.from(doc.body.children);
-        let currentQuiz = null;
 
         for (let i = 0; i < elements.length; i++) {
           const el = elements[i];
           let text = el.textContent.trim();
           if (!text) continue;
 
-          // Check for Cover Image and Video
+          // Cover Image & Video
           if (text.startsWith('COVER IMAGE:')) {
             coverImage = text.replace('COVER IMAGE:', '').trim();
             continue;
@@ -51,7 +50,7 @@ export async function parseDocxToBlocks(file) {
               blocks.push({ type: 'formula', content: match[1].trim() });
             }
           
-          // Callouts (Blockquotes or starting with >)
+          // Callouts
           } else if (text.startsWith('>')) {
              const cleanText = text.replace(/^>\s*/, '').replace(/Key Takeaway/i, '').trim();
              blocks.push({ type: 'callout', content: cleanText });
@@ -69,11 +68,14 @@ export async function parseDocxToBlocks(file) {
             if (rows.length > 0) {
               blocks.push({ type: 'table', rows });
             }
+
+          // Images from Word (Placeholders)
+          } else if (el.tagName === 'IMG' || text.includes('Uploaded Image')) {
+             blocks.push({ type: 'text', content: '📸 [Image Placeholder: Upload your graph/figure here]' });
+          }
           
-          // Quizzes (Q.1 format)
-          } else if (text.includes('Q.') || (el.className && el.className.includes('quiz'))) {
-            // Parse the quiz block
-            const rawHtml = el.innerHTML;
+          // Quizzes (Supports unlimited Q.1, Q.2, Q.3...)
+          } else if (text.includes('Q.')) {
             const lines = el.innerText.split('\n').map(l => l.trim()).filter(Boolean);
             
             let questionText = lines[0].replace(/<[^>]*>/g, '').replace(/^Q\.\d+:?\s*/, '');
@@ -82,8 +84,8 @@ export async function parseDocxToBlocks(file) {
             let description = '';
 
             lines.forEach(line => {
-              if (line.startsWith('A)') || line.startsWith('B)') || line.startsWith('C)') || line.startsWith('D)')) {
-                choices.push(line.replace(/^[A-D]\)\s*/, ''));
+              if (/^[A-Z]\)/.test(line)) {
+                choices.push(line.replace(/^[A-Z]\)\s*/, ''));
               } else if (line.startsWith('Answer:')) {
                 correctAnswer = line.replace('Answer:', '').trim();
               } else if (line.toLowerCase().startsWith('description:')) {
@@ -92,12 +94,12 @@ export async function parseDocxToBlocks(file) {
             });
 
             if (questionText && choices.length > 0) {
-              // Convert letter answer to index (A=0, B=1, etc.)
               let answerIndex = 0;
-              if (correctAnswer === 'A') answerIndex = 0;
-              else if (correctAnswer === 'B') answerIndex = 1;
-              else if (correctAnswer === 'C') answerIndex = 2;
-              else if (correctAnswer === 'D') answerIndex = 3;
+              const letter = correctAnswer.toUpperCase();
+              if (letter === 'A') answerIndex = 0;
+              else if (letter === 'B') answerIndex = 1;
+              else if (letter === 'C') answerIndex = 2;
+              else if (letter === 'D') answerIndex = 3;
               
               blocks.push({ 
                 type: 'quiz', 
@@ -111,7 +113,10 @@ export async function parseDocxToBlocks(file) {
           
           // Normal Text
           else if (el.tagName === 'P') {
-            blocks.push({ type: 'text', content: text });
+            // Ignore teacher instructions
+            if (!text.includes('TEACHER INSTRUCTIONS') && !text.includes('The parser uses these exact tags')) {
+              blocks.push({ type: 'text', content: text });
+            }
           }
         }
 
